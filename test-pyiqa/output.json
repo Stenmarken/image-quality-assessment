@@ -1,0 +1,30 @@
+{
+    "blurry_city.jpg": {
+        "brisque_matlab": 49.216835021972656,
+        "niqe": 6.5607925269637795
+    },
+    "BlurryDavid.jpg": {
+        "brisque_matlab": 64.75409698486328,
+        "niqe": 12.91849876776203
+    },
+    "sharp-image.jpg": {
+        "brisque_matlab": 9.085968017578125,
+        "niqe": 5.291517657796554
+    },
+    "sharp_landscape.jpg": {
+        "brisque_matlab": 25.675430297851562,
+        "niqe": 2.17780181474107
+    },
+    "tree.jpg": {
+        "brisque_matlab": 20.356761932373047,
+        "niqe": 2.9092264900807265
+    },
+    "sharp_portrait.jpg": {
+        "brisque_matlab": 29.607948303222656,
+        "niqe": 3.4475527813987914
+    },
+    "other_tree.jpg": {
+        "brisque_matlab": 7.418235778808594,
+        "niqe": 3.0623684391836465
+    }
+}

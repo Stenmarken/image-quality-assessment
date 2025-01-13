@@ -1,47 +1,90 @@
 import pyiqa
 from PIL import Image
 import numpy as np
+import pyiqa.utils
 import torch
 import os
+import time
+import pprint
+import json
 
-def calculate_brisque(path, file_types=()):
+def run_metric_varied(path, metrics, output_path, file_types=()):
     """
-    Calculates BRISQUE for all images with file type file_types in path.
+    Calculates metric for all files with file_types in location path.
+
+    Can work with images of varying dimensions
     """
+    start = time.time()
+    if not verify_metrics(metrics):
+        return False
+    
     img_paths = [f for f in os.listdir(path) if f.lower().endswith(file_types)]
+    
+    img_dict = {}
     for img_path in img_paths:
-        img_path = os.path.join(path, img_path)
-        image = Image.open(img_path)
-        # Unsqueezing is done to get 4D tensor
-        img_tensor = pyiqa.utils.img_util.imread2tensor(image).unsqueeze(0)
-        model = pyiqa.create_metric('brisque')
+        score = generate_scores(os.path.join(path, img_path), metrics)
+        img_dict[img_path] = score
+        print(score)
 
-        score = model(img_tensor)
+    with open(output_path, 'w') as json_file:
+        json.dump(img_dict, json_file, indent=4)
 
-        print(f'IQA score for {img_path}: {score}')
+    pprint.pprint(img_dict)
+    print(f'Process took {time.time() - start} seconds')
 
-def calculate_brisque_uniform(path, file_types=[]):
+def verify_metrics(metrics):
+    for metric in metrics:
+        if metric not in pyiqa.list_models():
+            print(f"{metric} not in pyiqa's models")
+            return False
+    return True
+
+def generate_scores(full_path, metrics):
+    # Unsqueezing is done to get a 4D tensor
+    img_tensor = pyiqa.utils.img_util.imread2tensor(full_path).unsqueeze(0)
+    score_dict = {}
+    for metric in metrics:
+        print(f"Running metric: {metric}")
+        model = pyiqa.create_metric(metric)
+        score_dict[metric] = model(img_tensor).item()
+    return score_dict
+
+def run_metric(path, metric, output_path, file_types=()):
     """
-    Calculates BRISQUE for all images with file type file_types in path.
-    Requires uniform dimensions of images.
+    Calculates metric for all files with file_types in location path.
+
+    Requires that the input files are of equal dimensions.
     """
-    img_paths = [f for f in os.listdir(path) if f.lower().endswith((" ".join(file_types)))]
+    start = time.time()
+    img_paths = [f for f in os.listdir(path) if f.lower().endswith(file_types)]
     images = [Image.open(os.path.join(path, img_path)) for img_path in img_paths]
     
     img_tensors = map(lambda img: pyiqa.utils.img_util.imread2tensor(img), images)
-    model = pyiqa.create_metric('brisque')
+    model = pyiqa.create_metric(metric)
     score = model(torch.stack(list(img_tensors)))
-    for i in range(len(img_paths)):
-        print(f'IQA score for {img_paths[i]}: {score[i]}')
+    with open(output_path, 'w') as f:
+        for i in range(len(img_paths)):
+            f.write(f'{metric} score for {img_paths[i]}: {score[i]}\n')
+            print(f'{metric} score for {img_paths[i]}: {score[i]}')
+    
+    print(f'Process took {time.time() - start} seconds')
 
-#calculate_brisque_uniform("../../sample_imgs", file_types=[".png"])
-calculate_brisque("../../../sample_imgs", file_types=(".jpg", ".png"))
+path = "../../../sample_imgs"
 
-#image = Image.open("../../../sample_imgs/")
-# Unsqueezing is done to get 4D tensor
-#img_tensor = pyiqa.utils.img_util.imread2tensor(image).unsqueeze(0)
-#model = pyiqa.create_metric('brisque')
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-#score = model(img_tensor)
+print("device:", device)
+metrics = ['arniqa-clive', 'arniqa-csiq', 'arniqa-flive', 
+           'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
+           'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
+           'clipiqa+_rn50_512', 'clipiqa+_vitL14_512',
+           'cnniqa', 'dbcnn', 'entropy', 'hyperiqa']
 
-#print(f'IQA score for 1.png: {score}')
+
+#run_metric(path=path, metric="brisque_matlab", file_types=(".png"), output_path="run_metric.txt")
+run_metric_varied(path=path, metrics=metrics, file_types=(".jpg", ".jpeg"), output_path="output.json")
+
+#run_metric(path="../../../sample_imgs", metric="brisque", file_types=(".png"), 
+           #output_path="run_metric_brisque.txt")
+#run_metric_varied(path="../../../sample_imgs", metric="brisque", file_types=(".png"), 
+           #output_path="run_metric_unconforming.txt")
