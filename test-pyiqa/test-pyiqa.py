@@ -79,7 +79,7 @@ metrics = ['arniqa-clive', 'arniqa-csiq', 'arniqa-flive',
            'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
            'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
            'clipiqa+_rn50_512', #'clipiqa+',
-           'cnniqa', 'dbcnn', 'entropy', 'hyperiqa']
+           'cnniqa', 'dbcnn'] #, 'entropy', 'hyperiqa']
 
 
 #run_metric(path=path, metric="brisque_matlab", file_types=(".png"), output_path="run_metric.txt")
