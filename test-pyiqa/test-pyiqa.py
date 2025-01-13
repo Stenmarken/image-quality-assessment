@@ -19,11 +19,11 @@ def run_metric_varied(path, metrics, output_path, file_types=()):
         return False
     
     img_paths = [f for f in os.listdir(path) if f.lower().endswith(file_types)]
-    
     img_dict = {}
-    for img_path in img_paths:
-        score = generate_scores(os.path.join(path, img_path), metrics)
-        img_dict[img_path] = score
+
+    for metric in metrics:
+        score = generate_scores(path, img_paths, metric)
+        img_dict[metric] = score
         print(score)
 
     with open(output_path, 'w') as json_file:
@@ -39,14 +39,14 @@ def verify_metrics(metrics):
             return False
     return True
 
-def generate_scores(full_path, metrics):
-    # Unsqueezing is done to get a 4D tensor
-    img_tensor = pyiqa.utils.img_util.imread2tensor(full_path).unsqueeze(0)
+def generate_scores(base_path, img_paths, metric):
+    print(f"Running metric: {metric}")
+    model = pyiqa.create_metric(metric)
     score_dict = {}
-    for metric in metrics:
-        print(f"Running metric: {metric}")
-        model = pyiqa.create_metric(metric)
-        score_dict[metric] = model(img_tensor).item()
+    for img_path in img_paths:
+        # Unsqueezing is done to get a 4D tensor
+        img_tensor = pyiqa.utils.img_util.imread2tensor(os.path.join(base_path, img_path)).unsqueeze(0)
+        score_dict[img_path] = model(img_tensor).item()
     return score_dict
 
 def run_metric(path, metric, output_path, file_types=()):
@@ -60,7 +60,7 @@ def run_metric(path, metric, output_path, file_types=()):
     images = [Image.open(os.path.join(path, img_path)) for img_path in img_paths]
     
     img_tensors = map(lambda img: pyiqa.utils.img_util.imread2tensor(img), images)
-    model = pyiqa.create_metric(metric)
+    model = pyiqa.create_metric(metric, device=device)
     score = model(torch.stack(list(img_tensors)))
     with open(output_path, 'w') as f:
         for i in range(len(img_paths)):
@@ -73,11 +73,12 @@ path = "../../../sample_imgs"
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+# clipiqa+_vitL14_512 model doesn't seem to work. Can't load it in. It loops forever.
 print("device:", device)
 metrics = ['arniqa-clive', 'arniqa-csiq', 'arniqa-flive', 
            'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
            'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
-           'clipiqa+_rn50_512', 'clipiqa+_vitL14_512',
+           'clipiqa+_rn50_512', #'clipiqa+',
            'cnniqa', 'dbcnn', 'entropy', 'hyperiqa']
 
 

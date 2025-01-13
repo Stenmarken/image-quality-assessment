@@ -1,30 +1,137 @@
 {
-    "blurry_city.jpg": {
-        "brisque_matlab": 49.216835021972656,
-        "niqe": 6.5607925269637795
+    "arniqa-clive": {
+        "blurry_city.jpg": 0.5532380938529968,
+        "BlurryDavid.jpg": 0.12810485064983368,
+        "sharp-image.jpg": 0.7167729139328003,
+        "sharp_landscape.jpg": 0.761874794960022,
+        "tree.jpg": 0.6602398157119751,
+        "sharp_portrait.jpg": 0.4100531041622162,
+        "other_tree.jpg": 0.5403890013694763
     },
-    "BlurryDavid.jpg": {
-        "brisque_matlab": 64.75409698486328,
-        "niqe": 12.91849876776203
+    "arniqa-csiq": {
+        "blurry_city.jpg": 0.9223505258560181,
+        "BlurryDavid.jpg": 0.4269607663154602,
+        "sharp-image.jpg": 0.9692510962486267,
+        "sharp_landscape.jpg": 0.9392576217651367,
+        "tree.jpg": 0.881549060344696,
+        "sharp_portrait.jpg": 0.8165127038955688,
+        "other_tree.jpg": 0.9261091351509094
     },
-    "sharp-image.jpg": {
-        "brisque_matlab": 9.085968017578125,
-        "niqe": 5.291517657796554
+    "arniqa-flive": {
+        "blurry_city.jpg": 0.6550056338310242,
+        "BlurryDavid.jpg": 0.6238048672676086,
+        "sharp-image.jpg": 0.7588521838188171,
+        "sharp_landscape.jpg": 0.7431184649467468,
+        "tree.jpg": 0.7667036652565002,
+        "sharp_portrait.jpg": 0.6476466059684753,
+        "other_tree.jpg": 0.7086742520332336
     },
-    "sharp_landscape.jpg": {
-        "brisque_matlab": 25.675430297851562,
-        "niqe": 2.17780181474107
+    "arniqa-kadid": {
+        "blurry_city.jpg": 0.8163115978240967,
+        "BlurryDavid.jpg": 0.2304532825946808,
+        "sharp-image.jpg": 0.7475430965423584,
+        "sharp_landscape.jpg": 0.7513154745101929,
+        "tree.jpg": 0.7626491785049438,
+        "sharp_portrait.jpg": 0.6246359348297119,
+        "other_tree.jpg": 0.7312597632408142
     },
-    "tree.jpg": {
-        "brisque_matlab": 20.356761932373047,
-        "niqe": 2.9092264900807265
+    "arniqa-live": {
+        "blurry_city.jpg": 0.8234896659851074,
+        "BlurryDavid.jpg": 0.4219127893447876,
+        "sharp-image.jpg": 0.8415215611457825,
+        "sharp_landscape.jpg": 0.8008620142936707,
+        "tree.jpg": 0.7885820269584656,
+        "sharp_portrait.jpg": 0.7162094116210938,
+        "other_tree.jpg": 0.7880529761314392
     },
-    "sharp_portrait.jpg": {
-        "brisque_matlab": 29.607948303222656,
-        "niqe": 3.4475527813987914
+    "arniqa-spaq": {
+        "blurry_city.jpg": 0.4943581521511078,
+        "BlurryDavid.jpg": 0.43015894293785095,
+        "sharp-image.jpg": 0.7322252988815308,
+        "sharp_landscape.jpg": 0.6938287615776062,
+        "tree.jpg": 0.6976646780967712,
+        "sharp_portrait.jpg": 0.46094369888305664,
+        "other_tree.jpg": 0.592077910900116
     },
-    "other_tree.jpg": {
-        "brisque_matlab": 7.418235778808594,
-        "niqe": 3.0623684391836465
+    "arniqa-tid": {
+        "blurry_city.jpg": 0.6193144917488098,
+        "BlurryDavid.jpg": 0.2841719686985016,
+        "sharp-image.jpg": 0.5349114537239075,
+        "sharp_landscape.jpg": 0.5111935138702393,
+        "tree.jpg": 0.44915783405303955,
+        "sharp_portrait.jpg": 0.4211159944534302,
+        "other_tree.jpg": 0.5273747444152832
+    },
+    "brisque_matlab": {
+        "blurry_city.jpg": 49.216835021972656,
+        "BlurryDavid.jpg": 64.75409698486328,
+        "sharp-image.jpg": 9.085968017578125,
+        "sharp_landscape.jpg": 25.675430297851562,
+        "tree.jpg": 20.356761932373047,
+        "sharp_portrait.jpg": 29.607948303222656,
+        "other_tree.jpg": 7.418235778808594
+    },
+    "clipiqa": {
+        "blurry_city.jpg": 0.3959169387817383,
+        "BlurryDavid.jpg": 0.299298495054245,
+        "sharp-image.jpg": 0.9084906578063965,
+        "sharp_landscape.jpg": 0.7401962280273438,
+        "tree.jpg": 0.8303495645523071,
+        "sharp_portrait.jpg": 0.6100101470947266,
+        "other_tree.jpg": 0.7391496896743774
+    },
+    "clipiqa+": {
+        "blurry_city.jpg": 0.49118325114250183,
+        "BlurryDavid.jpg": 0.19307932257652283,
+        "sharp-image.jpg": 0.8316221833229065,
+        "sharp_landscape.jpg": 0.7607136964797974,
+        "tree.jpg": 0.7341098785400391,
+        "sharp_portrait.jpg": 0.6654118299484253,
+        "other_tree.jpg": 0.6711204051971436
+    },
+    "clipiqa+_rn50_512": {
+        "blurry_city.jpg": 0.3527807593345642,
+        "BlurryDavid.jpg": 0.24706269800662994,
+        "sharp-image.jpg": 0.820692777633667,
+        "sharp_landscape.jpg": 0.6508632898330688,
+        "tree.jpg": 0.6523019671440125,
+        "sharp_portrait.jpg": 0.44677311182022095,
+        "other_tree.jpg": 0.4103556275367737
+    },
+    "cnniqa": {
+        "blurry_city.jpg": 0.5245351195335388,
+        "BlurryDavid.jpg": 0.286552757024765,
+        "sharp-image.jpg": 0.7300653457641602,
+        "sharp_landscape.jpg": 0.6712273359298706,
+        "tree.jpg": 0.7149535417556763,
+        "sharp_portrait.jpg": 0.7168377637863159,
+        "other_tree.jpg": 0.6439467668533325
+    },
+    "dbcnn": {
+        "blurry_city.jpg": 0.2941613793373108,
+        "BlurryDavid.jpg": 0.2539895176887512,
+        "sharp-image.jpg": 0.788615882396698,
+        "sharp_landscape.jpg": 0.6183590888977051,
+        "tree.jpg": 0.6596634387969971,
+        "sharp_portrait.jpg": 0.6565126180648804,
+        "other_tree.jpg": 0.48703524470329285
+    },
+    "entropy": {
+        "blurry_city.jpg": 7.690324306488037,
+        "BlurryDavid.jpg": 7.23713493347168,
+        "sharp-image.jpg": 7.378580093383789,
+        "sharp_landscape.jpg": 7.867096900939941,
+        "tree.jpg": 7.577911376953125,
+        "sharp_portrait.jpg": 7.330896377563477,
+        "other_tree.jpg": 7.7570390701293945
+    },
+    "hyperiqa": {
+        "blurry_city.jpg": 0.27810463309288025,
+        "BlurryDavid.jpg": 0.22262418270111084,
+        "sharp-image.jpg": 0.7738950848579407,
+        "sharp_landscape.jpg": 0.6345146298408508,
+        "tree.jpg": 0.7064980268478394,
+        "sharp_portrait.jpg": 0.5587213635444641,
+        "other_tree.jpg": 0.5210301876068115
     }
 }
