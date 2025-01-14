@@ -8,6 +8,7 @@ import time
 import pprint
 import json
 import gc
+import argparse
 
 class bcolors:
     HEADER = '\033[95m'
@@ -20,7 +21,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def run_metric_varied(path, metrics, output_path, file_types=()):
+def run_metric_varied(path, metrics, output_path, device, file_types=()):
     """
     Calculates metric for all files with file_types in location path.
 
@@ -34,7 +35,7 @@ def run_metric_varied(path, metrics, output_path, file_types=()):
     img_dict = {}
 
     for metric in metrics:
-        score = generate_scores(path, img_paths, metric)
+        score = generate_scores(path, img_paths, metric, device)
         img_dict[metric] = score
         print(score)
 
@@ -51,9 +52,10 @@ def verify_metrics(metrics):
             return False
     return True
 
-def generate_scores(base_path, img_paths, metric):
+def generate_scores(base_path, img_paths, metric, device):
     print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
-    model = pyiqa.create_metric(metric)
+    # Is this enough for it to run on CUDA when available. Do I also need .cuda()?
+    model = pyiqa.create_metric(metric, device=device)
     score_dict = {}
     for img_path in img_paths:
         # Unsqueezing is done to get a 4D tensor
@@ -69,7 +71,7 @@ def verify_tensor(img, img_tensor):
         return False
     return True
 
-def run_metric(path, metric, output_path, file_types=()):
+def run_metric(path, metric, output_path, device, file_types=()):
     """
     Calculates metric for all files with file_types in location path.
 
@@ -89,31 +91,64 @@ def run_metric(path, metric, output_path, file_types=()):
     
     print(f'Process took {time.time() - start} seconds')
 
-path = "../../../sample_imgs"
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print("device:", device)
-#gc.collect()
-#torch.cuda.empty_cache()
+def main():
+    (path, file_types, output_path) = parse_arguments()
 
-# clipiqa+_vitL14_512 model doesn't seem to work. Can't load it in. It loops forever.
-# I also get problems running clipiqa+, entropy, hyperiqa, laion_aes, musiq, musiq-ava,
-# musiq-paq2piq, musiq-spaq, paq2piq
-# qalign takes too much memory, perhaps qalign can be used in Google Colab.
-# qalign_4bit and qalign_8bit causes problems with CUDA. 
-# I don't think fid can be used as it requires a set of ground truth images
-# inception_score: TypeError: only integer tensors of a single element can be converted to an index
-metrics =   ['wadiqam_nr', 'ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'arniqa-flive', 
-            'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
-            'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
-            'clipiqa+_rn50_512', 'dbcnn', 'cnniqa', 'liqe', 'liqe_mix',
-            'maniqa', 'maniqa-kadid', 'maniqa-pipal', 
-            'nima', 'nima-koniq', 'nima-spaq', 'nima-vgg16-ava', 'niqe', 
-            'niqe_matlab', 'nrqm', 'pi', 'piqe',
-            'topiq_iaa', 'topiq_iaa_res50', 'topiq_nr', 
-            'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique']
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    print("device:", device)
+    #gc.collect()
+    #torch.cuda.empty_cache()
 
-
-run_metric_varied(path=path,
+    # clipiqa+_vitL14_512 model doesn't seem to work. Can't load it in. It loops forever.
+    # I also get problems running clipiqa+, entropy, hyperiqa, laion_aes, musiq, musiq-ava,
+    # musiq-paq2piq, musiq-spaq, paq2piq
+    # qalign takes too much memory, perhaps qalign can be used in Google Colab.
+    # qalign_4bit and qalign_8bit causes problems with CUDA. 
+    # I don't think fid can be used as it requires a set of ground truth images
+    # inception_score: TypeError: only integer tensors of a single element can be converted to an index
+    metrics =   ['wadiqam_nr', 'ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'arniqa-flive', 
+                'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
+                'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
+                'clipiqa+_rn50_512', 'dbcnn', 'cnniqa', 'liqe', 'liqe_mix',
+                'maniqa', 'maniqa-kadid', 'maniqa-pipal', 
+                'nima', 'nima-koniq', 'nima-spaq', 'nima-vgg16-ava', 'niqe', 
+                'niqe_matlab', 'nrqm', 'pi', 'piqe',
+                'topiq_iaa', 'topiq_iaa_res50', 'topiq_nr', 
+                'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique']
+    run_metric_varied(path=path,
                   metrics=metrics,
-                  file_types=(".png", ".jpg", ".jpeg"),
-                  output_path="sample_images.json")
+                  file_types=file_types,
+                  output_path=output_path,
+                  device=device)
+
+def parse_tuple(arg):
+    try:
+        return tuple(arg.split(","))
+    except:
+        raise argparse.ArgumentTypeError("File types must be in format '.jpg,.png,.xyz'")
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="pyiqa runnner")
+    parser.add_argument("dir_path", 
+                        type=str, help="path to the directory where the images are")
+    parser.add_argument("-f", "--filetypes", type=parse_tuple, 
+                        help="A tuple of the file types that should be included in the execution. Ex: .jpg,.png")
+    parser.add_argument("-o", "--output", type=str, help="Path to the file where the results are stored")
+    
+    args = parser.parse_args()
+
+    if not args.dir_path:
+        raise argparse.ArgumentTypeError("Directory path must be specified")
+    if args.filetypes:
+        file_types = args.filetypes
+    else:
+        file_types = (".jpg", ".png", ".jpeg")
+    if args.output:
+        output_path = args.output
+    else:
+        output_path = "results.json"
+
+    return (args.dir_path, file_types, output_path)
+
+if __name__ == '__main__':
+    main()
