@@ -64,7 +64,7 @@ def generate_scores(base_path, img_paths, metric):
 
 def verify_tensor(img, img_tensor):
     if img_tensor.shape[1] not in [1, 3]:
-        print(f"{bcolors.WARNING}WARNING: image {img} has bad tensor shape: 
+        print(f"{bcolors.WARNING}WARNING: image {img} has bad tensor shape:\
               {img_tensor.shape}. Skipping image{bcolors.ENDC}")
         return False
     return True
@@ -113,10 +113,7 @@ metrics =   ['wadiqam_nr', 'ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 
             'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique']
 
 
-run_metric_varied(path=path, metrics=metrics, file_types=(".png", ".jpg", ".jpeg"), output_path="sample_images.json")
-#run_metric_varied(path=path, metrics=metrics, file_types=("blurry_city.jpg"), output_path="output.json")
-
-#run_metric(path="../../../sample_imgs", metric="brisque", file_types=(".png"), 
-           #output_path="run_metric_brisque.txt")
-#run_metric_varied(path="../../../sample_imgs", metric="brisque", file_types=(".png"), 
-           #output_path="run_metric_unconforming.txt")
+run_metric_varied(path=path,
+                  metrics=metrics,
+                  file_types=(".png", ".jpg", ".jpeg"),
+                  output_path="sample_images.json")
