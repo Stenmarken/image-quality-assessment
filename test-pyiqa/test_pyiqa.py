@@ -110,16 +110,19 @@ def construct_image_dict(corrupt_image_dict):
 def label_images(image_dict):
     for filename, scores in image_dict.items():
         image = Image.open(f"corrupted/{filename}")
+        new_image = Image.new('RGB', (image.width, image.height + 50*len(scores.keys())), (0, 0, 0))
+        new_image.paste(image, (0, 0))
         font = ImageFont.load_default(size=36)
-        draw = ImageDraw.Draw(image)
-        position = (10, 10)
-        draw.text(position, json.dumps(scores), (0, 0, 0), font=font) 
-        image.save(f"corrupted/{filename}")
+        draw = ImageDraw.Draw(new_image)
+        position = (0, image.height + 10)
+        text = '\n'.join(f'{key}: {value}' for key, value in scores.items())
+        draw.text(position, text, (255, 255, 255), font=font) 
+        new_image.save(f"corrupted/{filename}")
 
 def noisy_images():
     print("Running noisy_images")
     corruption_types = ["gaussian_noise", "motion_blur", "defocus_blur"]
-    metrics = ["clipiqa", "brisque_matlab", "niqe_matlab", "tres"]
+    metrics = ["brisque_matlab", "niqe_matlab", "hyperiqa", "ilniqe"]
     corrupt_image_dict = corrupt_image("../../../sample_imgs/1.png", "1.png", corruptions=corruption_types)
     # Keys are names of images with a corruption type and a severity type.
     # Values consist of dictionaries with key-value pairs of type: (metric: score)
