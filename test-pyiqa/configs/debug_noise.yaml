@@ -1,0 +1,7 @@
+add_noise: True
+metrics: ['ilniqe']
+corruption_types: ['gaussian_noise']
+img_path: '../../../sample_imgs/1.png'
+img_name: '1.png'
+output_dir: 'corrupted/'
+results_path: 'corrupted/results.json'

@@ -10,7 +10,6 @@ def get_corrupted_image(corruption, image_path, severity):
     if corruption in ["glass_blur", "fog"]:
         print(f"{bcolors.WARNING}Corruption type {corruption} is not supported. Returning{bcolors.ENDC}")
         return
-
     image_np = np.asarray(Image.open(image_path))
     # corrupt returns a numpy ndarray, the same as the input
     return corrupt(image_np, corruption_name=corruption, severity=severity)
@@ -24,6 +23,9 @@ def save_image(img_path, img):
 
 def corrupt_image(img_path, img_name, severity_range=range(1,6), corruptions=get_corruption_names()):
     images = {}
+    uncorrupted = np.asarray(Image.open(img_path))
+    save_image(f"corrupted/{img_name}_uncorrupted_0.png", uncorrupted)
+    images['uncorrupted'] = {'0' : uncorrupted }
     for corruption in get_safe_corruptions(corruptions):
         sev_to_img = {}
         for severity in severity_range:

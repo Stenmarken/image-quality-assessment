@@ -120,7 +120,7 @@ def label_images(image_dict):
         draw.text(position, text, (255, 255, 255), font=font) 
         new_image.save(f"corrupted/{filename}")
 
-def noisy_images(corruption_types, metrics, path, img_name):
+def noisy_images(corruption_types, metrics, path, img_name, results_path):
     print("Running noisy_images")
     corrupt_image_dict = corrupt_image(path, img_name, corruptions=corruption_types)
     # Keys are names of images with a corruption type and a severity type.
@@ -137,6 +137,8 @@ def noisy_images(corruption_types, metrics, path, img_name):
                 image_dict[key][metric] = score
                 print(f"{corruption}, {severity}, {metric} -> score: {score}")
     label_images(image_dict)
+    with open(results_path, 'w') as json_file:
+        json.dump(image_dict, json_file, indent=4)
 
 def load_config(file_path):
     with open(file_path, 'r') as file:
@@ -165,7 +167,8 @@ def main():
         noisy_images(corruption_types=config['corruption_types'], 
                      metrics=config['metrics'],
                      path=config['img_path'],
-                     img_name=config['img_name'])
+                     img_name=config['img_name'],
+                     results_path=config['results_path'])
 
 if __name__ == '__main__':
     main()
