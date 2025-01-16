@@ -3,7 +3,6 @@ from PIL import Image
 import numpy as np
 import os
 from utils import bcolors
-import pyiqa.utils
 
 def get_corrupted_image(corruption, image_path, severity):
     if not os.path.isfile(image_path):

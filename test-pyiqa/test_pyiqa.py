@@ -8,10 +8,11 @@ import time
 import json
 import pprint
 import gc
-import argparse
 from corrupt_images import corrupt_image
 from utils import bcolors
 import json
+import argparse
+import yaml
 
 def run_metric_varied(path, metrics, output_path, device, file_types=()):
     """
@@ -52,13 +53,13 @@ def generate_scores(base_path, img_paths, metric, device):
     for img_path in img_paths:
         # Unsqueezing is done to get a 4D tensor
         img_tensor = pyiqa.utils.img_util.imread2tensor(os.path.join(base_path, img_path)).unsqueeze(0)
-        if verify_tensor(img_tensor=img_tensor, img_path=img_path):
+        if verify_tensor(img_tensor=img_tensor, img=img_path):
             score_dict[img_path] = model(img_tensor).item()
     return score_dict
 
-def generate_score(img_np, metric, model, device="cpu"):
+def generate_score(img_np, metric, device="cpu"):
     print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
-    #model = pyiqa.create_metric(metric, device=device)
+    model = pyiqa.create_metric(metric, device=device)
     img_tensor = to_tensor(img_np)
     if verify_tensor(img_tensor=img_tensor):
         return model(img_tensor).item()
@@ -100,11 +101,11 @@ def to_tensor(nd_arr):
     transposed = np.transpose(nd_arr, (2, 0, 1))
     return (torch.from_numpy(transposed).unsqueeze(0) / 255)    
 
-def construct_image_dict(corrupt_image_dict):
+def construct_image_dict(corrupt_image_dict, img_name):
     dict = {}
     for corruption, severity_dicts in corrupt_image_dict.items():
         for severity in severity_dicts.keys():
-            dict[f"1.png_{corruption}_{severity}.png"] = {}
+            dict[f"{img_name}_{corruption}_{severity}.png"] = {}
     return dict
 
 def label_images(image_dict):
@@ -119,14 +120,12 @@ def label_images(image_dict):
         draw.text(position, text, (255, 255, 255), font=font) 
         new_image.save(f"corrupted/{filename}")
 
-def noisy_images():
+def noisy_images(corruption_types, metrics, path, img_name):
     print("Running noisy_images")
-    corruption_types = ["gaussian_noise", "motion_blur", "defocus_blur"]
-    metrics = ["brisque_matlab", "niqe_matlab", "hyperiqa", "ilniqe"]
-    corrupt_image_dict = corrupt_image("../../../sample_imgs/1.png", "1.png", corruptions=corruption_types)
+    corrupt_image_dict = corrupt_image(path, img_name, corruptions=corruption_types)
     # Keys are names of images with a corruption type and a severity type.
     # Values consist of dictionaries with key-value pairs of type: (metric: score)
-    image_dict = construct_image_dict(corrupt_image_dict)
+    image_dict = construct_image_dict(corrupt_image_dict, img_name)
     for metric in metrics:
         print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
         model = pyiqa.create_metric(metric, device="cpu")
@@ -134,78 +133,39 @@ def noisy_images():
             for severity, image_nd in corruption_dict.items():
                 img_tensor = to_tensor(image_nd)
                 score = model(img_tensor).item()
-                key = f"1.png_{corruption}_{severity}.png"
+                key = f"{img_name}_{corruption}_{severity}.png"
                 image_dict[key][metric] = score
                 print(f"{corruption}, {severity}, {metric} -> score: {score}")
     label_images(image_dict)
 
-def debug():
-    metrics = ["hyperiqa"]
-    image_path = "../../../sample_imgs/1.png"
-    img_tensor = pyiqa.utils.img_util.imread2tensor(image_path).unsqueeze(0)
-    print(f"img_tensor.dtype: {img_tensor.dtype}")
-    #generate_score()
+def load_config(file_path):
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
 
 def main():
-    (path, file_types, output_path) = parse_arguments()
-
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    print("device:", device)
     #gc.collect()
     #torch.cuda.empty_cache()
-
-    # clipiqa+_vitL14_512 model doesn't seem to work. Can't load it in. It loops forever.
-    # I also get problems running clipiqa+, entropy, hyperiqa, laion_aes, musiq, musiq-ava,
-    # musiq-paq2piq, musiq-spaq, paq2piq
-    # qalign takes too much memory, perhaps qalign can be used in Google Colab.
-    # qalign_4bit and qalign_8bit causes problems with CUDA. 
-    # I don't think fid can be used as it requires a set of ground truth images
-    # inception_score: TypeError: only integer tensors of a single element can be converted to an index
-    metrics =   ['wadiqam_nr', 'ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'arniqa-flive', 
-                'arniqa-kadid', 'arniqa-live', 'arniqa-spaq', 
-                'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+', 
-                'clipiqa+_rn50_512', 'dbcnn', 'cnniqa', 'liqe', 'liqe_mix',
-                'maniqa', 'maniqa-kadid', 'maniqa-pipal', 
-                'nima', 'nima-koniq', 'nima-spaq', 'nima-vgg16-ava', 'niqe', 
-                'niqe_matlab', 'nrqm', 'pi', 'piqe',
-                'topiq_iaa', 'topiq_iaa_res50', 'topiq_nr', 
-                'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique']
-    run_metric_varied(path=path,
-                  metrics=metrics,
-                  file_types=file_types,
-                  output_path=output_path,
-                  device=device)
-
-def parse_tuple(arg):
-    try:
-        return tuple(arg.split(","))
-    except:
-        raise argparse.ArgumentTypeError("File types must be in format '.jpg,.png,.xyz'")
-
-def parse_arguments():
     parser = argparse.ArgumentParser(description="pyiqa runnner")
-    parser.add_argument("dir_path",
-                        type=str, help="path to the directory where the images are")
-    parser.add_argument("-f", "--filetypes", type=parse_tuple, 
-                        help="A tuple of the file types that should be included in the execution. Ex: .jpg,.png")
-    parser.add_argument("-o", "--output", type=str, help="Path to the file where the results are stored")
-    
+    parser.add_argument("-c", "--config", type=str, help="path to where the config .yaml file is located")
     args = parser.parse_args()
-
-    if not args.dir_path:
+    if not args.config:
         raise argparse.ArgumentTypeError("Directory path must be specified")
-    if args.filetypes:
-        file_types = args.filetypes
     else:
-        file_types = (".jpg", ".png", ".jpeg")
-    if args.output:
-        output_path = args.output
+        config = load_config(args.config)
+        
+    if not config['add_noise']:
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        print("device:", device)
+        run_metric_varied(path=config['img_dir'],
+                metrics=config['metrics'],
+                file_types=tuple(config['file_types']),
+                output_path=config['output_dir'],
+                device=device)
     else:
-        output_path = "results.json"
-
-    return (args.dir_path, file_types, output_path)
+        noisy_images(corruption_types=config['corruption_types'], 
+                     metrics=config['metrics'],
+                     path=config['img_path'],
+                     img_name=config['img_name'])
 
 if __name__ == '__main__':
-    #main()
-    #debug()
-    noisy_images()
+    main()

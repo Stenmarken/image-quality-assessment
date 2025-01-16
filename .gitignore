@@ -2,3 +2,4 @@
 **/iqa-env/
 __pycache__/
 corrupted/
+.DS_STORE

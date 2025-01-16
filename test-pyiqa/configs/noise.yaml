@@ -1,0 +1,6 @@
+add_noise: True
+metrics: ['ilniqe', 'hyperiqa', 'arniqa-clive']
+corruption_types: ['gaussian_noise', 'motion_blur', 'defocus_blur']
+img_path: '../../../sample_imgs/2.png'
+img_name: '2.png'
+output_dir: 'corrupted/'
