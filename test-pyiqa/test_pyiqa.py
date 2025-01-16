@@ -1,25 +1,17 @@
 import pyiqa
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import pyiqa.utils
 import torch
 import os
 import time
-import pprint
 import json
+import pprint
 import gc
 import argparse
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from corrupt_images import corrupt_image
+from utils import bcolors
+import json
 
 def run_metric_varied(path, metrics, output_path, device, file_types=()):
     """
@@ -60,11 +52,20 @@ def generate_scores(base_path, img_paths, metric, device):
     for img_path in img_paths:
         # Unsqueezing is done to get a 4D tensor
         img_tensor = pyiqa.utils.img_util.imread2tensor(os.path.join(base_path, img_path)).unsqueeze(0)
-        if verify_tensor(img_path, img_tensor):
+        if verify_tensor(img_tensor=img_tensor, img_path=img_path):
             score_dict[img_path] = model(img_tensor).item()
     return score_dict
 
-def verify_tensor(img, img_tensor):
+def generate_score(img_np, metric, model, device="cpu"):
+    print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
+    #model = pyiqa.create_metric(metric, device=device)
+    img_tensor = to_tensor(img_np)
+    if verify_tensor(img_tensor=img_tensor):
+        return model(img_tensor).item()
+    else:
+        raise ValueError(f"Tensor: {img_np.shape} has bad shape. Crashing")
+
+def verify_tensor(img_tensor, img=""):
     if img_tensor.shape[1] not in [1, 3]:
         print(f"{bcolors.WARNING}WARNING: image {img} has bad tensor shape:\
               {img_tensor.shape}. Skipping image{bcolors.ENDC}")
@@ -90,6 +91,57 @@ def run_metric(path, metric, output_path, device, file_types=()):
             print(f'{metric} score for {img_paths[i]}: {score[i]}')
     
     print(f'Process took {time.time() - start} seconds')
+
+def to_tensor(nd_arr):
+    """
+    Transforms nd_arr to pytorch tensor. In addition, transposes the array
+    and transforms values from [0, 255] -> [0, 1]
+    """
+    transposed = np.transpose(nd_arr, (2, 0, 1))
+    return (torch.from_numpy(transposed).unsqueeze(0) / 255)    
+
+def construct_image_dict(corrupt_image_dict):
+    dict = {}
+    for corruption, severity_dicts in corrupt_image_dict.items():
+        for severity in severity_dicts.keys():
+            dict[f"1.png_{corruption}_{severity}.png"] = {}
+    return dict
+
+def label_images(image_dict):
+    for filename, scores in image_dict.items():
+        image = Image.open(f"corrupted/{filename}")
+        font = ImageFont.load_default(size=36)
+        draw = ImageDraw.Draw(image)
+        position = (10, 10)
+        draw.text(position, json.dumps(scores), (0, 0, 0), font=font) 
+        image.save(f"corrupted/{filename}")
+
+def noisy_images():
+    print("Running noisy_images")
+    corruption_types = ["gaussian_noise", "motion_blur", "defocus_blur"]
+    metrics = ["clipiqa", "brisque_matlab", "niqe_matlab", "tres"]
+    corrupt_image_dict = corrupt_image("../../../sample_imgs/1.png", "1.png", corruptions=corruption_types)
+    # Keys are names of images with a corruption type and a severity type.
+    # Values consist of dictionaries with key-value pairs of type: (metric: score)
+    image_dict = construct_image_dict(corrupt_image_dict)
+    for metric in metrics:
+        print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
+        model = pyiqa.create_metric(metric, device="cpu")
+        for corruption, corruption_dict in corrupt_image_dict.items():
+            for severity, image_nd in corruption_dict.items():
+                img_tensor = to_tensor(image_nd)
+                score = model(img_tensor).item()
+                key = f"1.png_{corruption}_{severity}.png"
+                image_dict[key][metric] = score
+                print(f"{corruption}, {severity}, {metric} -> score: {score}")
+    label_images(image_dict)
+
+def debug():
+    metrics = ["hyperiqa"]
+    image_path = "../../../sample_imgs/1.png"
+    img_tensor = pyiqa.utils.img_util.imread2tensor(image_path).unsqueeze(0)
+    print(f"img_tensor.dtype: {img_tensor.dtype}")
+    #generate_score()
 
 def main():
     (path, file_types, output_path) = parse_arguments()
@@ -129,7 +181,7 @@ def parse_tuple(arg):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="pyiqa runnner")
-    parser.add_argument("dir_path", 
+    parser.add_argument("dir_path",
                         type=str, help="path to the directory where the images are")
     parser.add_argument("-f", "--filetypes", type=parse_tuple, 
                         help="A tuple of the file types that should be included in the execution. Ex: .jpg,.png")
@@ -151,4 +203,6 @@ def parse_arguments():
     return (args.dir_path, file_types, output_path)
 
 if __name__ == '__main__':
-    main()
+    #main()
+    #debug()
+    noisy_images()
