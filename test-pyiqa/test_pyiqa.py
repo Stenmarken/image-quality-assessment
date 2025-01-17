@@ -9,7 +9,7 @@ import json
 import pprint
 import gc
 from corrupt_images import corrupt_image
-from utils import bcolors
+from utils import log, bcolors
 import json
 import argparse
 import yaml
@@ -46,7 +46,7 @@ def verify_metrics(metrics):
     return True
 
 def generate_scores(base_path, img_paths, metric, device):
-    print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
+    log(f"Running metric: {metric}", bcolors.OKBLUE)
     # Is this enough for it to run on CUDA when available. Do I also need .cuda()?
     model = pyiqa.create_metric(metric, device=device)
     score_dict = {}
@@ -58,7 +58,7 @@ def generate_scores(base_path, img_paths, metric, device):
     return score_dict
 
 def generate_score(img_np, metric, device="cpu"):
-    print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
+    log(f"Running metric: {metric}", bcolors.OKBLUE)
     model = pyiqa.create_metric(metric, device=device)
     img_tensor = to_tensor(img_np)
     if verify_tensor(img_tensor=img_tensor):
@@ -68,30 +68,10 @@ def generate_score(img_np, metric, device="cpu"):
 
 def verify_tensor(img_tensor, img=""):
     if img_tensor.shape[1] not in [1, 3]:
-        print(f"{bcolors.WARNING}WARNING: image {img} has bad tensor shape:\
-              {img_tensor.shape}. Skipping image{bcolors.ENDC}")
+        log(f"WARNING: image {img} has bad tensor shape: {img_tensor.shape}. Skipping imgage", 
+            bcolors.WARNING)
         return False
     return True
-
-def run_metric(path, metric, output_path, device, file_types=()):
-    """
-    Calculates metric for all files with file_types in location path.
-
-    Requires that the input files are of equal dimensions.
-    """
-    start = time.time()
-    img_paths = [f for f in os.listdir(path) if f.lower().endswith(file_types)]
-    images = [Image.open(os.path.join(path, img_path)) for img_path in img_paths]
-    
-    img_tensors = map(lambda img: pyiqa.utils.img_util.imread2tensor(img), images)
-    model = pyiqa.create_metric(metric, device=device)
-    score = model(torch.stack(list(img_tensors)))
-    with open(output_path, 'w') as f:
-        for i in range(len(img_paths)):
-            f.write(f'{metric} score for {img_paths[i]}: {score[i]}\n')
-            print(f'{metric} score for {img_paths[i]}: {score[i]}')
-    
-    print(f'Process took {time.time() - start} seconds')
 
 def to_tensor(nd_arr):
     """
@@ -127,15 +107,16 @@ def noisy_images(corruption_types, metrics, path, img_name, results_path):
     # Values consist of dictionaries with key-value pairs of type: (metric: score)
     image_dict = construct_image_dict(corrupt_image_dict, img_name)
     for metric in metrics:
-        print(f"\n{bcolors.OKBLUE}Running metric: {metric}{bcolors.ENDC}\n")
+        log(f"Running metric: {metric}", bcolors.OKBLUE)
         model = pyiqa.create_metric(metric, device="cpu")
         for corruption, corruption_dict in corrupt_image_dict.items():
             for severity, image_nd in corruption_dict.items():
                 img_tensor = to_tensor(image_nd)
                 score = model(img_tensor).item()
+                rounded_score = round(score, 4)
                 key = f"{img_name}_{corruption}_{severity}.png"
-                image_dict[key][metric] = score
-                print(f"{corruption}, {severity}, {metric} -> score: {score}")
+                image_dict[key][metric] = rounded_score
+                print(f"{corruption}, {severity}, {metric} -> score: {rounded_score}")
     label_images(image_dict)
     with open(results_path, 'w') as json_file:
         json.dump(image_dict, json_file, indent=4)
