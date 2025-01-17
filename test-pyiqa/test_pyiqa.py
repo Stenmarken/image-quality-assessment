@@ -79,7 +79,7 @@ def to_tensor(nd_arr):
     and transforms values from [0, 255] -> [0, 1]
     """
     transposed = np.transpose(nd_arr, (2, 0, 1))
-    return (torch.from_numpy(transposed).unsqueeze(0) / 255)    
+    return (torch.tensor(transposed).unsqueeze(0) / 255)
 
 def construct_image_dict(corrupt_image_dict, img_name):
     dict = {}
@@ -101,7 +101,7 @@ def label_images(image_dict):
         new_image.save(f"corrupted/{filename}")
 
 def noisy_images(corruption_types, metrics, path, img_name, results_path):
-    print("Running noisy_images")
+    log("Running noisy_images", bcolors.OKBLUE)
     corrupt_image_dict = corrupt_image(path, img_name, corruptions=corruption_types)
     # Keys are names of images with a corruption type and a severity type.
     # Values consist of dictionaries with key-value pairs of type: (metric: score)
