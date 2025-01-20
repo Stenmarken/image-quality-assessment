@@ -102,7 +102,10 @@ def label_images(image_dict):
 
 def noisy_images(corruption_types, metrics, path, img_name, results_path):
     log("Running noisy_images", bcolors.OKBLUE)
-    corrupt_image_dict = corrupt_image(path, img_name, corruptions=corruption_types)
+    corrupt_image_dict = corrupt_image(path,
+                                       img_name,
+                                       corruptions=corruption_types,
+                                       output_path=os.path.dirname(results_path))
     # Keys are names of images with a corruption type and a severity type.
     # Values consist of dictionaries with key-value pairs of type: (metric: score)
     image_dict = construct_image_dict(corrupt_image_dict, img_name)
@@ -117,7 +120,9 @@ def noisy_images(corruption_types, metrics, path, img_name, results_path):
                 key = f"{img_name}_{corruption}_{severity}.png"
                 image_dict[key][metric] = rounded_score
                 print(f"{corruption}, {severity}, {metric} -> score: {rounded_score}")
-    label_images(image_dict)
+    #label_images(image_dict)
+
+    os.makedirs(os.path.dirname(results_path), exist_ok=True)
     with open(results_path, 'w') as json_file:
         json.dump(image_dict, json_file, indent=4)
 
