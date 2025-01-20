@@ -90,7 +90,7 @@ def construct_image_dict(corrupt_image_dict, img_name):
 
 def label_images(image_dict):
     for filename, scores in image_dict.items():
-        image = Image.open(f"corrupted/{filename}")
+        image = Image.open(f"output/corrupted/{filename}")
         new_image = Image.new('RGB', (image.width, image.height + 50*len(scores.keys())), (0, 0, 0))
         new_image.paste(image, (0, 0))
         font = ImageFont.load_default(size=36)
@@ -98,7 +98,7 @@ def label_images(image_dict):
         position = (0, image.height + 10)
         text = '\n'.join(f'{key}: {value}' for key, value in scores.items())
         draw.text(position, text, (255, 255, 255), font=font) 
-        new_image.save(f"corrupted/{filename}")
+        new_image.save(f"output/corrupted/{filename}")
 
 def noisy_images(corruption_types, metrics, path, img_name, results_path):
     log("Running noisy_images", bcolors.OKBLUE)

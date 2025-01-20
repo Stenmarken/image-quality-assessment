@@ -17,5 +17,5 @@ metrics: ['wadiqam_nr', 'ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'ar
                 'topiq_iaa', 'topiq_iaa_res50', 'topiq_nr', 
                 'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique']
 img_dir: "../../../sample_imgs"
-output_dir: "corrupted/"
+output_dir: "output/corrupted/"
 file_types: [".jpg", ".jpeg", ".png"]

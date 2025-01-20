@@ -13,5 +13,5 @@ metrics: ['ilniqe', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'arniqa-flive',
 corruption_types: ['gaussian_noise', 'motion_blur', 'defocus_blur']
 img_path: '../../../sample_imgs/1.png'
 img_name: '1.png'
-output_dir: 'corrupted/'
-results_path: 'corrupted/results.json'
+output_dir: 'output/corrupted/'
+results_path: 'output/corrupted/results.json'
