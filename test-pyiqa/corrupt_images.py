@@ -24,6 +24,7 @@ def save_image(img_path, img):
 def corrupt_image(img_path, img_name, severity_range=range(1,6), corruptions=get_corruption_names()):
     images = {}
     uncorrupted = np.asarray(Image.open(img_path))
+    # TODO: User should be able to specify where the images end up
     save_image(f"corrupted/{img_name}_uncorrupted_0.png", uncorrupted)
     images['uncorrupted'] = {'0' : uncorrupted }
     for corruption in get_safe_corruptions(corruptions):
