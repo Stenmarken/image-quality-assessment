@@ -128,7 +128,7 @@ def noisy_images(corruption_types, metrics, path, img_name, results_path):
 
 def load_config(file_path):
     with open(file_path, 'r') as file:
-        return yaml.safe_load(file)
+        yaml.safe_load(file)
 
 def main():
     #gc.collect()
