@@ -1,8 +1,9 @@
 rain:
-  droplet_share: [0.0001, 0.025, 10]
+  droplet_share: [0.0001, 0.025, 3]
+  randomness_seed: 5
   slant: -15
   drop_length : 20
   drop_width : 1
   drop_color : [180, 180, 180]
-  blur_value : [0, 6, 7]
-  brightness_coefficient : [0.3, 1.0, 8]
+  blur_value : [1, 6, 5]
+  brightness_coefficient : [0.3, 1.0, 5]

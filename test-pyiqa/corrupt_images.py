@@ -10,9 +10,9 @@ import random
 import json
 import yaml
 import itertools
-import pprint
 
-def generate_droplets(image, share):
+def generate_droplets(image, share, seed):
+    np.random.seed(seed)
     height, width, _ = image.shape
     num_samples = int(share * height*width)
     indices = np.random.choice(height*width, num_samples, replace=False)
@@ -21,42 +21,11 @@ def generate_droplets(image, share):
     coords = [(index % width, index // width) for index in indices]
     return coords
 
-def generate_rain_droplets(path, output_path):
-    """
-    Seeding randomness doesn't make this function deterministic.
-    """
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    transform = A.ReplayCompose([A.RandomRain(
-        slant_range=(-15, -15),
-        drop_length=20,
-        drop_width=1,
-        drop_color=(180, 180, 180),
-        blur_value=7,
-        brightness_coefficient=0.7,
-        p=1.0,
-    )])
-    transformed = transform(image=image)
-    coords = transformed['replay']['transforms'][0]['params']['rain_drops']
-    coords_dict = {
-        'shape' : image.shape,
-        'path' : path,
-        'coords' : coords
-    }
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(coords_dict, f, indent=4)
-
-def get_droplets(droplets_path):
-    with open(droplets_path, "r") as f:
-        droplets_dict = json.load(f)
-        return [tuple(coord) for coord in droplets_dict['coords']]
-
-def func_albumentations(img_path, config):
-    #droplets = get_droplets(config['droplets_path'])
+def add_rain(img_path, config):
+    random.seed(config['randomness_seed'])
     image = cv2.imread(img_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    droplets  = generate_droplets(image, config['droplet_share'])
+    droplets  = generate_droplets(image, config['droplet_share'], config['randomness_seed'])
     return F.add_rain(img=image,
                slant=config['slant'],
                drop_length=config['drop_length'],
@@ -65,32 +34,6 @@ def func_albumentations(img_path, config):
                blur_value=config['blur_value'],
                brightness_coefficient=config['brightness_coefficient'],
                rain_drops=droplets)
-
-def albumentations_corrupted():
-    #drop_lengths = [20, 40, 60]
-    drop_lengths = [20, 20, 20]
-    #blur_values = [5, 7, 9]
-    blur_values = [5, 5, 5]
-    #drop_widths = [1, 2, 3]
-    drop_widths = [1, 1, 1]
-
-    #brightness_coefficients = [0.7, 0.5, 0.3]
-    brightness_coefficients = [0.7, 0.7, 0.7]
-
-    image = cv2.imread('../../../sample_imgs/1.png')
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    for i in range(1):
-        transform = A.ReplayCompose([A.RandomRain(
-                    slant_range=(-15, -15),
-                    drop_length=drop_lengths[i],
-                    drop_width=drop_widths[i],
-                    drop_color=(180, 180, 180),
-                    blur_value=blur_values[i],
-                    brightness_coefficient=brightness_coefficients[i],
-                    p=1.0)])
-        transformed = transform(image=image)
-        image_pil = Image.fromarray(transformed['image'])
-        image_pil.show()
 
 def get_corrupted_image(corruption, image_path, severity):
     if not os.path.isfile(image_path):
@@ -135,7 +78,7 @@ def corrupt_image(img_path, img_name,
         images[corruption] = sev_to_img
     return images
 
-def handle_config(file_path):
+def generate_rain_configs(file_path):
     config = {}
     with open(file_path, 'r') as file:
         config = yaml.safe_load(file)
@@ -155,26 +98,25 @@ def handle_config(file_path):
         d['blur_value'] = int(d['blur_value'])
     return dicts
 
+def generate_images(config_path, img_path, output_path):
+    configs = generate_rain_configs(config_path)
+    log(f"Generating {len(configs)} images", bcolor_type=bcolors.WARNING)
+    file_to_config = {}
+    for i, config in enumerate(configs):
+        log("Generating image with config", bcolor_type=bcolors.OKBLUE)
+        log(f"{config}", bcolor_type=bcolors.OKCYAN)
+        img = add_rain(img_path=img_path, config=config)
+        img = Image.fromarray(img)
+        path = os.path.join(output_path, f'{i}.png')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        img.save(path)
+        file_to_config[f'{i}.png'] = config
+    
+    with open(os.path.join(output_path, 'file_to_config.json'), "w") as f:
+        json.dump(file_to_config, f, indent=4)
+
 if __name__ == "__main__":
-    """
-    corrupt_image(img_path="../../../sample_imgs/1.png", 
-                  img_name="1.png", 
-                  corruptions=get_corruption_names(),
-                  output_path="own_corrupted/")
-    """
-    random.seed(7)
-    np.random.seed(42)
-    #image = cv2.imread('../../../sample_imgs/1.png')
-    #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    #albumentations_corrupted()
-    #get_rain_droplets('../../../sample_imgs/1.png')
-    #generate_rain_droplets('../../../sample_imgs/1.png',
-                           #'output/albumentations/droplets/droplets.json')
-    
-    
-    configs = handle_config('configs/albumentations/test.yaml')
-    img_last_config = func_albumentations('../../../sample_imgs/1.png',
-                              config=configs[-1])
-    img_last_config = Image.fromarray(img_last_config)
-    img_last_config.show()
+    generate_images(config_path='configs/albumentations/test.yaml',
+                    img_path='../../../sample_imgs/1.png',
+                    output_path='output/albumentations/rainy_images')
     
