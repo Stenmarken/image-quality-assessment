@@ -1,4 +1,5 @@
 randomness_seed: 5
+image_path: '../../../sample_imgs/1.png'
 rain:
   droplet_share: [0.0001, 0.01, 5]
   slant: -15
@@ -9,9 +10,11 @@ rain:
   #drop_color: [60, 83, 105]
   blur_value : [1, 6, 5]
   brightness_coefficient : 0.7
+  output_dir: 'output/albumentations/rainy/'
 fog:
   fog_particle_share: [0.001, 1.0, 5]
   fog_intensity: [0.5, 0.9, 5]
   alpha_coef: [0.5, 1.0, 5]
   fog_particle_size: 5
+  output_dir: 'output/albumentations/foggy'
 

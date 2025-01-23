@@ -9,6 +9,7 @@ import random
 import json
 import yaml
 import itertools
+import argparse
 
 def generate_droplets(image, share, seed):
     np.random.seed(seed)
@@ -88,10 +89,7 @@ def corrupt_image(img_path, img_name,
         images[corruption] = sev_to_img
     return images
 
-def generate_rain_configs(file_path):
-    config = {}
-    with open(file_path, 'r') as file:
-        config = yaml.safe_load(file)
+def generate_rain_configs(config):
     rain_config = config['rain']
     for k, v in rain_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -100,19 +98,13 @@ def generate_rain_configs(file_path):
             rain_config[k] = list(np.linspace(start, stop, num))
         else:
             rain_config[k] = [v]
-    keys = rain_config.keys()
-    values = rain_config.values()
-
-    dicts = [dict(zip(keys, combination)) for combination in itertools.product(*values)]
+    dicts = generate_combinations(rain_config)
     for d in dicts:
         d['randomness_seed'] = config['randomness_seed']
         d['blur_value'] = int(d['blur_value'])
     return dicts
 
-def generate_fog_configs(file_path):
-    config = {}
-    with open(file_path, 'r') as file:
-        config = yaml.safe_load(file)
+def generate_fog_configs(config):
     fog_config = config['fog']
     for k, v in fog_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -121,23 +113,30 @@ def generate_fog_configs(file_path):
             fog_config[k] = list(np.linspace(start, stop, num))
         else:
             fog_config[k] = [v]
-    keys = fog_config.keys()
-    values = fog_config.values()
-
-    dicts = [dict(zip(keys, combination)) for combination in itertools.product(*values)]
+    dicts = generate_combinations(fog_config)
     for d in dicts:
         d['randomness_seed'] = config['randomness_seed']
     return dicts
 
-def generate_images(config_path, img_path, output_path):
-    configs = generate_rain_configs(config_path)
+def generate_combinations(config):
+    keys = config.keys()
+    values = config.values()
+    return [dict(zip(keys, combination)) for combination in itertools.product(*values)]
+
+def load_config(path):
+    with open(path, 'r') as file:
+        return yaml.safe_load(file)
+
+def generate_images(img_path, output_path, configs, corrupt_func):
+    #configs = generate_rain_configs(config_path)
     #configs = generate_fog_configs(config_path)
     log(f"Generating {len(configs)} images", bcolor_type=bcolors.WARNING)
     file_to_config = {}
     for i, config in enumerate(configs):
         log("Generating image with config", bcolor_type=bcolors.OKBLUE)
         log(f"{config}", bcolor_type=bcolors.OKCYAN)
-        img = add_rain(img_path=img_path, config=config)
+        #img = add_rain(img_path=img_path, config=config)
+        img = corrupt_func(img_path=img_path, config=config)
         #img = add_fog(img_path=img_path, config=config)
         img = Image.fromarray(img)
         path = os.path.join(output_path, f'{i}.png')
@@ -148,8 +147,32 @@ def generate_images(config_path, img_path, output_path):
     with open(os.path.join(output_path, 'file_to_config.json'), "w") as f:
         json.dump(file_to_config, f, indent=4)
 
+def main():
+    parser = argparse.ArgumentParser(description="pyiqa runnner")
+    parser.add_argument("-c", "--config", type=str, help="path to where the config .yaml file is located")
+    args = parser.parse_args()
+    if not args.config:
+        raise argparse.ArgumentTypeError("Directory path must be specified")
+    else:
+        config = load_config(args.config)
+        img_path = config['image_path']
+        if 'rain' in config:
+            log(f"\nGenerating rainy images", bcolor_type=bcolors.HEADER)
+            output_path = config['rain']['output_dir']
+            rainy_configs = generate_rain_configs(config)
+            generate_images(img_path=img_path,
+                            output_path=output_path,
+                            configs=rainy_configs,
+                            corrupt_func=add_rain)
+        if 'fog' in config:
+            log(f"\nGenerating foggy images", bcolor_type=bcolors.HEADER)
+            output_path = config['fog']['output_dir']
+            fog_configs = generate_fog_configs(config)
+            generate_images(img_path=img_path,
+                            output_path=output_path,
+                            configs=fog_configs,
+                            corrupt_func=add_fog)
+
 if __name__ == "__main__":
-    generate_images(config_path='configs/albumentations/test.yaml',
-                    img_path='../../../sample_imgs/1.png',
-                    output_path='output/albumentations/rainy_images')
+    main()
     
