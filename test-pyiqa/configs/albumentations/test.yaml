@@ -1,9 +1,17 @@
+randomness_seed: 5
 rain:
-  droplet_share: [0.0001, 0.025, 3]
-  randomness_seed: 5
+  droplet_share: [0.0001, 0.01, 5]
   slant: -15
   drop_length : 20
   drop_width : 1
-  drop_color : [180, 180, 180]
+  #drop_color : [146, 146, 146]
+  drop_color : [200, 200, 200]
+  #drop_color: [60, 83, 105]
   blur_value : [1, 6, 5]
-  brightness_coefficient : [0.3, 1.0, 5]
+  brightness_coefficient : 0.7
+fog:
+  fog_particle_share: [0.001, 1.0, 5]
+  fog_intensity: [0.5, 0.9, 5]
+  alpha_coef: [0.5, 1.0, 5]
+  fog_particle_size: 5
+
