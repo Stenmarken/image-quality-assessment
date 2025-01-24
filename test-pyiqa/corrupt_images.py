@@ -45,7 +45,7 @@ def add_fog(img_path, config):
                       fog_particle_positions=droplets,
                       fog_particle_radiuses=[config['fog_particle_size']]*len(droplets))
 
-def generate_rain_configs(config):
+def generate_rain_configs(config, use_combinations, n_configs):
     rain_config = config['rain']
     for k, v in rain_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -54,13 +54,16 @@ def generate_rain_configs(config):
             rain_config[k] = list(np.linspace(start, stop, num))
         else:
             rain_config[k] = [v]
-    dicts = generate_combinations(rain_config)
+    if use_combinations:
+        dicts = generate_combinations(rain_config)
+    else:
+        dicts = generate_n_configs(rain_config, n_configs)
     for d in dicts:
         d['randomness_seed'] = config['randomness_seed']
         d['blur_value'] = int(d['blur_value'])
     return dicts
 
-def generate_fog_configs(config):
+def generate_fog_configs(config, use_combinations, n_configs):
     fog_config = config['fog']
     for k, v in fog_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -69,12 +72,32 @@ def generate_fog_configs(config):
             fog_config[k] = list(np.linspace(start, stop, num))
         else:
             fog_config[k] = [v]
-    dicts = generate_combinations(fog_config)
+    if use_combinations:
+        dicts = generate_combinations(fog_config)
+    else:
+        dicts = generate_n_configs(fog_config, n_configs)
     for d in dicts:
         d['randomness_seed'] = config['randomness_seed']
     return dicts
 
+def generate_n_configs(config, n):
+    """
+    Assumes that every variable in config has 1 or n possible values.
+    Generates n configs.
+    """
+    dicts = [{} for _ in range(n)]
+    for k, v in config.items():
+        for i in range(n):
+            if len(v) == 1:
+                dicts[i][k] = v[0]
+            else:
+                dicts[i][k] = v[i]
+    return dicts
+
 def generate_combinations(config):
+    """
+    Generates all possible combinations of values specified in the config
+    """
     keys = config.keys()
     values = config.values()
     return [dict(zip(keys, combination)) for combination in itertools.product(*values)]
@@ -108,10 +131,12 @@ def main():
     else:
         config = load_config(args.config)
         img_path = config['image_path']
+        use_combinations = config['use_combinations']
+        n_configs = config['n_configs']
         if 'rain' in config:
             log(f"\nGenerating rainy images", bcolor_type=bcolors.HEADER)
             output_path = config['rain']['output_dir']
-            rainy_configs = generate_rain_configs(config)
+            rainy_configs = generate_rain_configs(config, use_combinations, n_configs)
             generate_images(img_path=img_path,
                             output_path=output_path,
                             configs=rainy_configs,
@@ -119,7 +144,7 @@ def main():
         if 'fog' in config:
             log(f"\nGenerating foggy images", bcolor_type=bcolors.HEADER)
             output_path = config['fog']['output_dir']
-            fog_configs = generate_fog_configs(config)
+            fog_configs = generate_fog_configs(config, use_combinations, n_configs)
             generate_images(img_path=img_path,
                             output_path=output_path,
                             configs=fog_configs,
@@ -127,4 +152,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
