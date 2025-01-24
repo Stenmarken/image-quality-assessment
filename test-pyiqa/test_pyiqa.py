@@ -30,8 +30,6 @@ def run_metric_varied(path, metrics, output_path, device, file_types=()):
         score = generate_scores(path, img_paths, metric, device)
         img_dict[metric] = score
 
-    img_dict['brisque_matlab'] = dict(sorted(img_dict['brisque_matlab'].items(), key=lambda item: item[1]))
-
     with open(output_path, 'w') as json_file:
         json.dump(img_dict, json_file, indent=4)
 
@@ -46,6 +44,7 @@ def verify_metrics(metrics):
     return True
 
 def generate_scores(base_path, img_paths, metric, device):
+    start = time.time()
     log(f"Running metric: {metric}", bcolors.OKBLUE)
     # Is this enough for it to run on CUDA when available. Do I also need .cuda()?
     model = pyiqa.create_metric(metric, device=device)
@@ -56,6 +55,7 @@ def generate_scores(base_path, img_paths, metric, device):
         img_tensor = pyiqa.utils.img_util.imread2tensor(os.path.join(base_path, img_path)).unsqueeze(0)
         if verify_tensor(img_tensor=img_tensor, img=img_path):
             score_dict[img_path] = model(img_tensor).item()
+    print(f'Running metric took {time.time() - start} seconds')
     return score_dict
 
 def generate_score(img_np, metric, device="cpu"):
@@ -106,7 +106,7 @@ def load_config(file_path):
         return yaml.safe_load(file)
 
 def main():
-    #gc.collect()
+    gc.collect()
     torch.cuda.empty_cache()
     parser = argparse.ArgumentParser(description="pyiqa runnner")
     parser.add_argument("-c", "--config", type=str, help="path to where the config .yaml file is located")
