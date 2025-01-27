@@ -1,9 +1,20 @@
 import json
-import os
+from scipy import stats
+import pprint
+import numpy.testing as npt
+import numpy as np
 
 def load_json(path):
     with open(path, 'r') as f:
         return json.load(f)
+
+def concat_dictionaries(d1, d2):
+    for k, v in d2.items():
+        if k in d1:
+            d1[f'{k}_2'] = v
+        else:
+            d1[k] = v
+    return d1
 
 def naive_eval(dict):
     """
@@ -30,6 +41,7 @@ def naive_eval(dict):
 
 def output_results(path, output_path):
     results = load_json(path)
+    
     model_results = {}
     for k, v in results.items():
         share = naive_eval(v)
@@ -40,14 +52,68 @@ def output_results(path, output_path):
     with open(output_path, "w") as f:
         json.dump(sorted_model_results, f, indent=4)
 
-def main():
-    paths = ['output/albumentations/foggy/results.json',
-             'output/albumentations/rainy/results.json']
-    output_paths = ['output/albumentations/foggy/naive_eval.json',
-                    'output/albumentations/rainy/naive_eval.json']
+def concatenate_scores_files(path_1, path_2, output_path):
+    f1 = load_json(path_1)
+    f2 = load_json(path_2)
+    combined = concat_dictionaries(f1, f2)
+    sorted_model_results = {k: v for k, v in sorted(combined.items(), key=lambda item: item[1], reverse=True)}
+
+    with open(output_path, "w") as f:
+        json.dump(sorted_model_results, f, indent=4)
     
-    for i in range(len(paths)):
-        output_results(paths[i], output_paths[i])
+def concatenate_results_files(path_1, path_2, output_path):
+    f1 = load_json(path_1)
+    f2 = load_json(path_2)
+
+    for k, v in f2.items():
+        if k in f1:
+            f1[f'{k}_2'] = v
+        else:
+            f1[k] = v
+
+    with open(output_path, "w") as f:
+        json.dump(f1, f, indent=4)
+
+def SPRC(path):
+    """
+    Note that the Spearman rank correlation coefficient is only accurate
+    if the number of samples is greater than 500.
+    """
+    pass
+
+def kendalltau(path, output_path):
+    d = load_json(path)
+    kendall = {}
+    asc = [i for i in range(100)]
+    desc = [i for i in range(99, -1, -1)]
+    for metric, values in d.items():
+        sorted_values = {k: v for k, v in sorted(values.items(), key=lambda item: item[1], reverse=True)}
+        keys = sorted_values.keys()
+        ranking = map ((lambda s: int(s[:-4])), list(keys))
+        ranking_list = list(ranking)
+        asc_val = stats.kendalltau(x=asc, y=ranking_list)
+        desc_val = stats.kendalltau(x=desc, y=ranking_list)
+        
+        npt.assert_allclose(np.abs(asc_val), np.abs(desc_val), atol=1e-3)
+
+        kendall[metric] = asc_val
+    pprint.pprint(kendall)
+
+    with open(output_path, "w") as f:
+        json.dump(kendall, f, indent=4)
+
+def main():
+    pass
+    #paths = ['output/albumentations/foggy/foggy_results.json']
+             #'output/albumentations/foggy/results.json']
+    #paths = ['output/albumentations/rainy/other_metrics_results.json']
+    #output_paths = ['output/albumentations/rainy/naive_eval_other_metrics.json']
+    #output_paths = ['output/albumentations/foggy/foggy_naive_eval.json']
+                    #'output/albumentations/foggy/naive_eval.json']
+    #for i in range(len(paths)):
+        #output_results(paths[i], output_paths[i])
+    kendalltau("output/albumentations/rainy/combined_results.json",
+               "output/albumentations/rainy/rainy_kendall.json")
 
 if __name__ == '__main__':
     main()
