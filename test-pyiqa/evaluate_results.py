@@ -74,14 +74,15 @@ def concatenate_results_files(path_1, path_2, output_path):
     with open(output_path, "w") as f:
         json.dump(f1, f, indent=4)
 
-def SPRC(path):
+def rank_score(path, output_path, scipy_metric):
     """
-    Note that the Spearman rank correlation coefficient is only accurate
-    if the number of samples is greater than 500.
-    """
-    pass
+    Inputs a path to the file with the raw results,
+    a path to where the rank scores should end up, and
+    a metric (spearman rank correlation coefficient, kendalltau).
 
-def kendalltau(path, output_path):
+    NOTE: Spearman rank correlation coefficient requires >500 samples to be accurate.
+    Read more at: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html
+    """
     d = load_json(path)
     kendall = {}
     asc = [i for i in range(100)]
@@ -91,8 +92,14 @@ def kendalltau(path, output_path):
         keys = sorted_values.keys()
         ranking = map ((lambda s: int(s[:-4])), list(keys))
         ranking_list = list(ranking)
-        asc_val = stats.kendalltau(x=asc, y=ranking_list)
-        desc_val = stats.kendalltau(x=desc, y=ranking_list)
+        if scipy_metric == 'kendalltau':
+            asc_val = stats.kendalltau(x=asc, y=ranking_list)
+            desc_val = stats.kendalltau(x=desc, y=ranking_list)
+        elif scipy_metric == 'sprc':
+            asc_val = stats.spearmanr(a=asc, b=ranking_list)
+            desc_val = stats.spearmanr(a=desc, b=ranking_list)
+        else:
+            raise ValueError("You must select an existing metric!")
         
         npt.assert_allclose(np.abs(asc_val), np.abs(desc_val), atol=1e-3)
 
@@ -103,7 +110,6 @@ def kendalltau(path, output_path):
         json.dump(kendall, f, indent=4)
 
 def main():
-    pass
     #paths = ['output/albumentations/foggy/foggy_results.json']
              #'output/albumentations/foggy/results.json']
     #paths = ['output/albumentations/rainy/other_metrics_results.json']
@@ -112,8 +118,10 @@ def main():
                     #'output/albumentations/foggy/naive_eval.json']
     #for i in range(len(paths)):
         #output_results(paths[i], output_paths[i])
-    kendalltau("output/albumentations/rainy/combined_results.json",
-               "output/albumentations/rainy/rainy_kendall.json")
+    #kendalltau("output/albumentations/rainy/combined_results.json",
+     #          "output/albumentations/rainy/rainy_kendall.json")
+    rank_score('output/albumentations/rainy/combined_results.json',
+         'output/albumentations/rainy/rainy_sprc.json', 'sprc')
 
 if __name__ == '__main__':
     main()
