@@ -1,3 +1,6 @@
+import yaml
+import json
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -11,3 +14,12 @@ class bcolors:
 
 def log(msg, bcolor_type):
     print(f"{bcolor_type}{msg}{bcolors.ENDC}")
+
+
+def load_yaml(file_path):
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
+    
+def load_json(path):
+    with open(path, 'r') as file:
+        return json.load(file)

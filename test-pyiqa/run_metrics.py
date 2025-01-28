@@ -1,5 +1,4 @@
 import pyiqa
-from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import pyiqa.utils
 import torch
@@ -8,12 +7,10 @@ import time
 import json
 import pprint
 import gc
-from utils import log, bcolors
-import json
+from utils import log, bcolors, load_yaml
 import argparse
-import yaml
 
-def run_metric_varied(path, metrics, output_path, device, file_types=()):
+def run_metric(path, metrics, output_path, device, file_types=()):
     """
     Calculates metric for all files with file_types in location path.
 
@@ -30,6 +27,7 @@ def run_metric_varied(path, metrics, output_path, device, file_types=()):
         score = generate_scores(path, img_paths, metric, device)
         img_dict[metric] = score
 
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w') as json_file:
         json.dump(img_dict, json_file, indent=4)
 
@@ -89,22 +87,6 @@ def construct_image_dict(corrupt_image_dict, img_name):
             dict[f"{img_name}_{corruption}_{severity}.png"] = {}
     return dict
 
-def label_images(image_dict):
-    for filename, scores in image_dict.items():
-        image = Image.open(f"output/corrupted/{filename}")
-        new_image = Image.new('RGB', (image.width, image.height + 50*len(scores.keys())), (0, 0, 0))
-        new_image.paste(image, (0, 0))
-        font = ImageFont.load_default(size=36)
-        draw = ImageDraw.Draw(new_image)
-        position = (0, image.height + 10)
-        text = '\n'.join(f'{key}: {value}' for key, value in scores.items())
-        draw.text(position, text, (255, 255, 255), font=font) 
-        new_image.save(f"output/corrupted/{filename}")
-
-def load_config(file_path):
-    with open(file_path, 'r') as file:
-        return yaml.safe_load(file)
-
 def main():
     gc.collect()
     torch.cuda.empty_cache()
@@ -114,12 +96,12 @@ def main():
     if not args.config:
         raise argparse.ArgumentTypeError("Directory path must be specified")
     else:
-        config = load_config(args.config)
+        config = load_yaml(args.config)
         print(f"args.config: {args.config}")
         device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         print("device:", device)
         print("config", config)
-        run_metric_varied(path=config['img_dir'],
+        run_metric(path=config['img_dir'],
                 metrics=config['metrics'],
                 file_types=tuple(config['file_types']),
                 output_path=config['output_path'],

@@ -1,12 +1,11 @@
 from PIL import Image
 import numpy as np
 import os
-from utils import bcolors, log
+from utils import bcolors, log, load_yaml
 import albumentations.augmentations.functional as F
 import cv2
 import random
 import json
-import yaml
 import itertools
 import argparse
 
@@ -102,12 +101,8 @@ def generate_combinations(config):
     values = config.values()
     return [dict(zip(keys, combination)) for combination in itertools.product(*values)]
 
-def load_config(path):
-    with open(path, 'r') as file:
-        return yaml.safe_load(file)
-
 def generate_images(img_path, output_path, configs, corrupt_func):
-    log(f"Generating {len(configs)} images", bcolor_type=bcolors.WARNING)
+    log(f"Generating {len(configs)} images at {output_path}", bcolor_type=bcolors.WARNING)
     file_to_config = {}
     for i, config in enumerate(configs):
         log("Generating image with config", bcolor_type=bcolors.OKBLUE)
@@ -129,7 +124,7 @@ def main():
     if not args.config:
         raise argparse.ArgumentTypeError("Directory path must be specified")
     else:
-        config = load_config(args.config)
+        config = load_yaml(args.config)
         img_path = config['image_path']
         use_combinations = config['use_combinations']
         n_configs = config['n_configs']

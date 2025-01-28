@@ -1,5 +1,5 @@
 import json
-from utils import log, bcolors
+from utils import log, bcolors, load_json
 import os
 import cv2
 
@@ -10,7 +10,7 @@ def combine_metric_data(path):
     to
         {"ilniqe": {"img_name_1": 5, "img_name_2" : 6}}
     """
-    img_dict = read_data(path)
+    img_dict = load_json(path)
     first_key = list(img_dict.keys())[0] # Could go wrong if empty dict
     metrics = list(img_dict[first_key].keys())
     metric_dict = {}
@@ -25,7 +25,10 @@ def combine_metric_data(path):
         json.dump(metric_dict, json_file, indent=4)
 
 def reverse_search(path, metric, score_range):
-    img_dict = read_data(path)
+    """
+    Return all images for metric in score_range
+    """
+    img_dict = load_json(path)
     metric_dict = img_dict[metric]
     min, max = score_range[0], score_range[1]
     return {k: v for k, v in metric_dict.items() if v >= min and v <= max}
@@ -43,13 +46,10 @@ def view_scored_images(results_path, image_path, metrics, score_range):
             print("Press any key to continue to the next image...")
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-
-def read_data(path):
-    with open(path, 'r') as file:
-        return json.load(file)
     
 #combine_metric_data("corrupted/results.json")
-view_scored_images("corrupted/metric_results.json",
-                   "corrupted",
-                   ["hyperiqa", "ilniqe"],
-                   (0.3, 0.4))
+if __name__ == "__main__":
+    view_scored_images("corrupted/metric_results.json",
+                    "corrupted",
+                    ["hyperiqa", "ilniqe"],
+                    (0.3, 0.4))

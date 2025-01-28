@@ -3,10 +3,7 @@ from scipy import stats
 import pprint
 import numpy.testing as npt
 import numpy as np
-
-def load_json(path):
-    with open(path, 'r') as f:
-        return json.load(f)
+from utils import load_json
 
 def concat_dictionaries(d1, d2):
     for k, v in d2.items():
