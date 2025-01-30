@@ -3,7 +3,7 @@ from scipy import stats
 import pprint
 import numpy.testing as npt
 import numpy as np
-from utils import load_json
+from utils import load_json, log, bcolors
 
 def concat_dictionaries(d1, d2):
     for k, v in d2.items():
@@ -106,6 +106,17 @@ def rank_score(path, output_path, scipy_metric):
     with open(output_path, "w") as f:
         json.dump(kendall, f, indent=4)
 
+def distance_from_zero(pair):
+    fst = pair[1][0]
+    return abs(fst)
+
+def show_sorted_dict(path):
+    dict = load_json(path)
+    sorted_values = {k: v for k, v in sorted(dict.items(), key=distance_from_zero, reverse=True)}
+    log(f"Showing results from {path}", bcolor_type=bcolors.HEADER)
+    for k, v in sorted_values.items():
+        print(f"{k} -> {v}")
+
 def main():
     #paths = ['output/albumentations/foggy/foggy_results.json']
              #'output/albumentations/foggy/results.json']
@@ -117,8 +128,14 @@ def main():
         #output_results(paths[i], output_paths[i])
     #kendalltau("output/albumentations/rainy/combined_results.json",
      #          "output/albumentations/rainy/rainy_kendall.json")
-    rank_score('output/albumentations/rainy/combined_results.json',
-         'output/albumentations/rainy/rainy_sprc.json', 'sprc')
+    #rank_score('output/albumentations/foggy/combined_foggy_results.json',
+         #'output/albumentations/foggy/foggy_kendall.json', 'kendalltau')
+    #concatenate_results_files('output/albumentations/foggy/foggy_results.json',
+                              #'output/albumentations/foggy/foggy_other_metrics_results.json',
+                              #'output/albumentations/foggy/combined_foggy_results.json')
+    show_sorted_dict('output/albumentations/foggy/foggy_kendall.json')
+    print("\n\n")
+    show_sorted_dict('output/albumentations/rainy/rainy_kendall.json')
 
 if __name__ == '__main__':
     main()
