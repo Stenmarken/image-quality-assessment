@@ -1,0 +1,20 @@
+randomness_seed: 5
+#image_path: '../../../data/sample_imgs/1.png'
+image_path: '../../../sample_imgs/1.png'
+use_combinations: False
+n_configs: &n_configs 100
+rain:
+  droplet_share: [0.0, 0.06, *n_configs]
+  slant: -15
+  drop_length : 20
+  drop_width : 1
+  drop_color : [200, 200, 200]
+  blur_value : 7
+  brightness_coefficient : [1.0, 0.7, *n_configs]
+  output_dir: 'output/albumentations/0_100/rainy'
+fog:
+  fog_particle_share: 0.7
+  fog_intensity: [0.0, 1.0, *n_configs]
+  alpha_coef: [0.5, 1.0, *n_configs]
+  fog_particle_size: 25
+  output_dir: 'output/albumentations/0_100/foggy'
