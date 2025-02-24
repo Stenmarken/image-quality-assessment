@@ -1,0 +1,23 @@
+# qalign takes too much memory
+# ilniqe, niqe, niqe_matlab, and pi gives problems with matrices
+# `linalg.svd: (Batch element 0): The algorithm failed to converge 
+# because the input matrix is ill-conditioned or has too many repeated
+# singular values (error code: 36).`
+metrics: ['wadiqam_nr', 'hyperiqa', 'arniqa-clive', 'arniqa-csiq', 'arniqa-flive',
+           'arniqa-kadid', 'arniqa-live', 'arniqa-spaq',
+           'arniqa-tid', 'brisque_matlab', 'clipiqa', 'clipiqa+',
+           'clipiqa+_rn50_512', 'dbcnn', 'cnniqa', 'liqe',
+           'maniqa', 'maniqa-kadid', 'maniqa-pipal',
+           'nima', 'nima-koniq', 'nima-spaq', 'nima-vgg16-ava',
+           'nrqm', 'piqe',
+           'topiq_iaa', 'topiq_iaa_res50', 'topiq_nr',
+           'topiq_nr-flive', 'topiq_nr-spaq', 'tres', 'tres-flive', 'unique',
+           'clipiqa+_vitL14_512', 'entropy', 'laion_aes', 'musiq', 'musiq-ava',
+           'musiq-paq2piq', 'musiq-spaq', 'paq2piq']
+img_dir: "/content/drive/MyDrive/Skola/Thesis/data/0_100/foggy/"
+output_path: "/content/drive/MyDrive/Skola/Thesis/data/0_100/foggy/foggy_0_100.json"
+file_types: [".jpg", ".jpeg", ".png"]
+# Should the results be cleared before execution
+clear_output: False
+# Should new results be appended to existing results
+append_res: True
