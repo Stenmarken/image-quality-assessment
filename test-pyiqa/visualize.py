@@ -9,7 +9,8 @@ import os
 
 def pca(path):
     metric_to_scores = load_json(path)
-    df = pd.DataFrame(metric_to_scores)
+    df = (pd.DataFrame(metric_to_scores)).T
+    print(df.iloc[:5, :5])
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df)
     pca = PCA(n_components=2)
@@ -17,7 +18,6 @@ def pca(path):
     print(f"explained variance ratio: {np.cumsum(pca.explained_variance_ratio_)}")
     print(f"PC1: {pca.components_[0]}")
     
-    #print(f"pca.components_: {pca.components_}")
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=principal_components[:, 0], y=principal_components[:, 1])
     for i, label in enumerate(df.index):
@@ -27,7 +27,7 @@ def pca(path):
 
     plt.xlabel("PC1")
     plt.ylabel("PC2")
-    plt.title("PCA")
+    plt.title(f"PCA for rainy images found at {path}")
     plt.axhline(0, color='grey', linestyle='--', linewidth=0.7)
     plt.axvline(0, color='grey', linestyle='--', linewidth=0.7)
     plt.grid(True)
@@ -92,7 +92,7 @@ def visualize_one_fig(path, metrics, image_names, standardise=True,
     else:
         plt.show()
     
-if __name__ == "__main__":
+def run_plots():
     #path = "output/albumentations/rainy/combined_results.json"
     path = "output/albumentations/foggy/combined_foggy_results.json"
     image_names = all_images()
@@ -101,6 +101,7 @@ if __name__ == "__main__":
     for chunk in metrics_chunks:
         visualize_one_fig(path, chunk, image_names, standardise=True, save_plots=True,
                           save_path='output/foggy_plots', fig_info='Rain')
-    #pca("output/albumentations/rainy/combined_results.json")
-    #pca("output/albumentations/foggy/combined_foggy_results.json")
 
+if __name__ == "__main__":
+    pca("output/albumentations/rainy/combined_results.json")
+    #pca("output/albumentations/foggy/combined_foggy_results.json")
