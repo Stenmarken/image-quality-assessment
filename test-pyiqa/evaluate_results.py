@@ -5,13 +5,15 @@ import numpy.testing as npt
 import numpy as np
 from utils import load_json, log, bcolors
 
+
 def concat_dictionaries(d1, d2):
     for k, v in d2.items():
         if k in d1:
-            d1[f'{k}_2'] = v
+            d1[f"{k}_2"] = v
         else:
             d1[k] = v
     return d1
+
 
 def naive_eval(dict):
     """
@@ -20,7 +22,9 @@ def naive_eval(dict):
     Works for descending and ascending score systems.
     """
     asc = {k: v for k, v in sorted(dict.items(), key=lambda item: item[1])}
-    des = {k: v for k, v in sorted(dict.items(), key=lambda item: item[1], reverse=True)}
+    des = {
+        k: v for k, v in sorted(dict.items(), key=lambda item: item[1], reverse=True)
+    }
 
     asc_correct = 0
     des_correct = 0
@@ -36,40 +40,52 @@ def naive_eval(dict):
         i += 1
     return max(asc_correct, des_correct) / len(dict.items())
 
+
 def output_results(path, output_path):
     results = load_json(path)
-    
+
     model_results = {}
     for k, v in results.items():
         share = naive_eval(v)
         model_results[k] = share
 
-    sorted_model_results = {k: v for k, v in sorted(model_results.items(), key=lambda item: item[1], reverse=True)}
-    
+    sorted_model_results = {
+        k: v
+        for k, v in sorted(
+            model_results.items(), key=lambda item: item[1], reverse=True
+        )
+    }
+
     with open(output_path, "w") as f:
         json.dump(sorted_model_results, f, indent=4)
+
 
 def concatenate_scores_files(path_1, path_2, output_path):
     f1 = load_json(path_1)
     f2 = load_json(path_2)
     combined = concat_dictionaries(f1, f2)
-    sorted_model_results = {k: v for k, v in sorted(combined.items(), key=lambda item: item[1], reverse=True)}
+    sorted_model_results = {
+        k: v
+        for k, v in sorted(combined.items(), key=lambda item: item[1], reverse=True)
+    }
 
     with open(output_path, "w") as f:
         json.dump(sorted_model_results, f, indent=4)
-    
+
+
 def concatenate_results_files(path_1, path_2, output_path):
     f1 = load_json(path_1)
     f2 = load_json(path_2)
 
     for k, v in f2.items():
         if k in f1:
-            f1[f'{k}_2'] = v
+            f1[f"{k}_2"] = v
         else:
             f1[k] = v
 
     with open(output_path, "w") as f:
         json.dump(f1, f, indent=4)
+
 
 def rank_score(path, output_path, scipy_metric):
     """
@@ -85,19 +101,22 @@ def rank_score(path, output_path, scipy_metric):
     asc = [i for i in range(100)]
     desc = [i for i in range(99, -1, -1)]
     for metric, values in d.items():
-        sorted_values = {k: v for k, v in sorted(values.items(), key=lambda item: item[1], reverse=True)}
+        sorted_values = {
+            k: v
+            for k, v in sorted(values.items(), key=lambda item: item[1], reverse=True)
+        }
         keys = sorted_values.keys()
-        ranking = map ((lambda s: int(s[:-4])), list(keys))
+        ranking = map((lambda s: int(s[:-4])), list(keys))
         ranking_list = list(ranking)
-        if scipy_metric == 'kendalltau':
+        if scipy_metric == "kendalltau":
             asc_val = stats.kendalltau(x=asc, y=ranking_list)
             desc_val = stats.kendalltau(x=desc, y=ranking_list)
-        elif scipy_metric == 'sprc':
+        elif scipy_metric == "sprc":
             asc_val = stats.spearmanr(a=asc, b=ranking_list)
             desc_val = stats.spearmanr(a=desc, b=ranking_list)
         else:
             raise ValueError("You must select an existing metric!")
-        
+
         npt.assert_allclose(np.abs(asc_val), np.abs(desc_val), atol=1e-3)
 
         kendall[metric] = asc_val
@@ -106,36 +125,42 @@ def rank_score(path, output_path, scipy_metric):
     with open(output_path, "w") as f:
         json.dump(kendall, f, indent=4)
 
+
 def distance_from_zero(pair):
     fst = pair[1][0]
     return abs(fst)
 
+
 def show_sorted_dict(path):
     dict = load_json(path)
-    sorted_values = {k: v for k, v in sorted(dict.items(), key=distance_from_zero, reverse=True)}
+    sorted_values = {
+        k: v for k, v in sorted(dict.items(), key=distance_from_zero, reverse=True)
+    }
     log(f"Showing results from {path}", bcolor_type=bcolors.HEADER)
     for k, v in sorted_values.items():
         print(f"{k} -> {v}")
 
-def main():
-    #paths = ['output/albumentations/foggy/foggy_results.json']
-             #'output/albumentations/foggy/results.json']
-    #paths = ['output/albumentations/rainy/other_metrics_results.json']
-    #output_paths = ['output/albumentations/rainy/naive_eval_other_metrics.json']
-    #output_paths = ['output/albumentations/foggy/foggy_naive_eval.json']
-                    #'output/albumentations/foggy/naive_eval.json']
-    #for i in range(len(paths)):
-        #output_results(paths[i], output_paths[i])
-    #kendalltau("output/albumentations/rainy/combined_results.json",
-     #          "output/albumentations/rainy/rainy_kendall.json")
-    #rank_score('output/albumentations/foggy/combined_foggy_results.json',
-         #'output/albumentations/foggy/foggy_kendall.json', 'kendalltau')
-    #concatenate_results_files('output/albumentations/foggy/foggy_results.json',
-                              #'output/albumentations/foggy/foggy_other_metrics_results.json',
-                              #'output/albumentations/foggy/combined_foggy_results.json')
-    show_sorted_dict('output/albumentations/foggy/foggy_kendall.json')
-    print("\n\n")
-    show_sorted_dict('output/albumentations/rainy/rainy_kendall.json')
 
-if __name__ == '__main__':
+def main():
+    # paths = ['output/albumentations/foggy/foggy_results.json']
+    #'output/albumentations/foggy/results.json']
+    # paths = ['output/albumentations/rainy/other_metrics_results.json']
+    # output_paths = ['output/albumentations/rainy/naive_eval_other_metrics.json']
+    # output_paths = ['output/albumentations/foggy/foggy_naive_eval.json']
+    #'output/albumentations/foggy/naive_eval.json']
+    # for i in range(len(paths)):
+    # output_results(paths[i], output_paths[i])
+    # kendalltau("output/albumentations/rainy/combined_results.json",
+    #          "output/albumentations/rainy/rainy_kendall.json")
+    # rank_score('output/albumentations/foggy/combined_foggy_results.json',
+    #'output/albumentations/foggy/foggy_kendall.json', 'kendalltau')
+    # concatenate_results_files('output/albumentations/foggy/foggy_results.json',
+    #'output/albumentations/foggy/foggy_other_metrics_results.json',
+    #'output/albumentations/foggy/combined_foggy_results.json')
+    show_sorted_dict("output/albumentations/foggy/foggy_kendall.json")
+    print("\n\n")
+    show_sorted_dict("output/albumentations/rainy/rainy_kendall.json")
+
+
+if __name__ == "__main__":
     main()
