@@ -1,0 +1,19 @@
+randomness_seed: 5
+images_path: /home/victor/fs_home/thesis_dataset/images/undistorted/Munkkivuori
+use_combinations: False
+n_configs: &n_configs 100
+rain:
+  droplet_share: [0.0000, 0.01, *n_configs]
+  slant: -15
+  drop_length: 20
+  drop_width: 1
+  drop_color: [200, 200, 200]
+  blur_value: 7
+  brightness_coefficient: [1.0, 0.7, *n_configs]
+  output_dir: "/home/victor/fs_home/thesis_dataset/images/distorted/Munkkivuori/rainy"
+fog:
+  fog_particle_share: 0.5
+  fog_intensity: [0.5, 0.9, *n_configs]
+  alpha_coef: [0.5, 0.9, *n_configs]
+  fog_particle_size: 25
+  output_dir: "/home/victor/fs_home/thesis_dataset/images/distorted/Munkkivuori/foggy"

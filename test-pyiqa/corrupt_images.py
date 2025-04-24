@@ -153,49 +153,41 @@ def generate_combinations(config):
     return [dict(zip(keys, combination)) for combination in itertools.product(*values)]
 
 
-def generate_images(yaml_config, configs, corrupt_func, output_path):
-    if "select_random_imgs_from_base_path" in yaml_config:
-        corrupt_images_batch(yaml_config, configs, corrupt_func, output_path)
-    else:
-        corrupt_single_image(yaml_config, configs, corrupt_func, output_path)
+def has_distorted_images(dir: Path):
+    """
+    Checks if the image has been distorted in a previous run
+    """
+    if not dir.exists():
+        return False
+    expected_files = {f"{i}.png" for i in range(100)}
+    actual_files = {p.name for p in dir.iterdir() if p.is_file()}
+    return expected_files.issubset(actual_files)
 
 
 def corrupt_images_batch(yaml_config, configs, corrupt_func, output_path):
-    base_path = Path(yaml_config["base_path"])
+    source_images_path = Path(yaml_config["images_path"])
+    png_files = list(source_images_path.glob("*.png"))
     output_path = Path(output_path)
-    seed = yaml_config["randomness_seed"]
-    n = yaml_config["num_images"]
     log(
         f"Generating {len(configs)} images at {output_path}",
         bcolor_type=bcolors.WARNING,
     )
-    images = random_n_select(base_path, n, seed)
     file_to_config = {}
-    for img in images:
+    for img in png_files:
         img_path = Path(img)
+        full_path = output_path / img_path.name
+        if has_distorted_images(full_path):
+            log(
+                f"Image: {img.name} has already been distorted in previous run. Skipping",
+                bcolor_type=bcolors.OKBLUE,
+            )
+            continue
+
         full_path = output_path / img_path.name
         full_path.parent.mkdir(parents=True, exist_ok=True)
         for i, config in enumerate(configs):
-            suffix = f"blur_{config['blur_value'][0]}_kernel"
-            generate_one_image(
-                corrupt_func, i, img_path, config, full_path, suffix=suffix
-            )
-            file_to_config[f"{img_path.name}_{suffix}{i}.png"] = config
-
-    with open(os.path.join(output_path, "file_to_config.json"), "w") as f:
-        json.dump(file_to_config, f, indent=4)
-
-
-def corrupt_single_image(yaml_config, configs, corrupt_func, output_path):
-    img_path = yaml_config["image_path"]
-    log(
-        f"Generating {len(configs)} images at {output_path}",
-        bcolor_type=bcolors.WARNING,
-    )
-    file_to_config = {}
-    for i, config in enumerate(configs):
-        generate_one_image(corrupt_func, i, img_path, config, output_path)
-        file_to_config[f"{i}.png"] = config
+            generate_one_image(corrupt_func, i, img_path, config, full_path)
+            file_to_config[f"{img_path.name}_{i}.png"] = config
 
     with open(os.path.join(output_path, "file_to_config.json"), "w") as f:
         json.dump(file_to_config, f, indent=4)
@@ -234,14 +226,14 @@ def main():
         use_combinations = yaml_config["use_combinations"]
         n_configs = yaml_config["n_configs"]
 
-        for distortion in ["rain", "fog", "blur"]:
+        for distortion in ["fog", "rain"]:
             if distortion in yaml_config:
                 log(f"\nGenerating {distortion} images", bcolor_type=bcolors.HEADER)
                 output_path = yaml_config[distortion]["output_dir"]
                 config_func = distortion_configs[distortion]
                 configs = config_func(yaml_config, use_combinations, n_configs)
                 corrupt_func = distortion_transforms[distortion]
-                generate_images(yaml_config, configs, corrupt_func, output_path)
+                corrupt_images_batch(yaml_config, configs, corrupt_func, output_path)
 
 
 if __name__ == "__main__":

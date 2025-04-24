@@ -1,5 +1,6 @@
 **/opencv-env/
 **/iqa-env/
+**/env/
 __pycache__/
 .DS_STORE
 output/
