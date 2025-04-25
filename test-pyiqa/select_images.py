@@ -4,8 +4,8 @@ from pathlib import Path
 import argparse
 
 
-def select_and_copy_random_pngs(
-    source_directory, target_directory, n_files=50, seed=42
+def select_and_copy_files(
+    source_directory, target_directory, n_files=50, seed=42, filetype=".png"
 ):
     """
     Randomly select n PNG files from source directory and copy them to target directory.
@@ -30,16 +30,16 @@ def select_and_copy_random_pngs(
     target_path.mkdir(parents=True, exist_ok=True)
 
     # Get all PNG files from directory
-    png_files = list(source_path.glob("*.png"))
+    files = list(source_path.glob(f"*{filetype}"))
 
     # Check if we have enough files
-    if len(png_files) < n_files:
+    if len(files) < n_files:
         raise ValueError(
-            f"Directory contains only {len(png_files)} PNG files, cannot select {n_files}"
+            f"Directory contains only {len(files)} files, cannot select {n_files}"
         )
 
     # Randomly select files
-    selected_files = random.sample(png_files, n_files)
+    selected_files = random.sample(files, n_files)
 
     # Copy files to target directory
     copied_files = []
@@ -73,14 +73,20 @@ if __name__ == "__main__":
         help="Number of images that are randomly selected.",
         default=10,
     )
+    parser.add_argument("-f",
+                        "--filetype",
+                        type=str,
+                        help="File type to be moved",
+                        default=".png")
     parser.add_argument("--seed", type=int, help="Randomness seed", default=42)
     args = parser.parse_args()
 
-    copied_files = select_and_copy_random_pngs(
+    copied_files = select_and_copy_files(
         args["source_dir"],
         args["target_dir"],
         n_files=args["num_images"],
         seed=args["seed"],
+        filetype=args["filetype"]
     )
 
     print(f"Successfully copied {len(copied_files)} files to {args["target_dir"]}")
