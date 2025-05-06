@@ -63,6 +63,29 @@ def add_fog(img_path, config):
     )
 
 
+def add_contrast_brightness(img_path, config):
+    image = read_img(img_path)
+    # Necessary as the default values are non-zero
+    b_limit, c_limit = (0, 0)
+    if "brightness_limit" in config:
+        b_limit = config["brightness_limit"]
+    if "contrast_limit" in config:
+        c_limit = config["contrast_limit"]
+    c_b_transform = A.ReplayCompose(
+        [
+            A.RandomBrightnessContrast(
+                brightness_limit=b_limit,
+                contrast_limit=c_limit,
+                p=1,
+                brightness_by_max=config["brightness_by_max"],
+                ensure_safe_range=config["ensure_safe_range"],
+            )
+        ]
+    )
+    replay = c_b_transform(image=image)
+    return replay["image"]
+
+
 def add_blur(img_path, config):
     image = read_img(img_path)
     blur_transform = A.ReplayCompose([A.Blur(blur_limit=config["blur_value"], p=1)])
@@ -90,6 +113,34 @@ def generate_blur_configs(config, use_combintions, n_configs):
     start, stop, step = blur_config["blur_value"]
     blurs = [(i, i) for i in range(start, stop + 1, step) if i % 2 == 1]
     return [{"blur_value": blur} for blur in blurs]
+
+
+def generate_brightness_configs(config, use_combintions, n_configs):
+    brightness_config = config["brightness"]
+    start, stop, n = brightness_config["brightness_limit"]
+    brightness_values = [(i, i) for i in np.linspace(start, stop, n)]
+    return [
+        {
+            "brightness_limit": b,
+            "brightness_by_max": brightness_config["brightness_by_max"],
+            "ensure_safe_range": brightness_config["ensure_safe_range"],
+        }
+        for b in brightness_values
+    ]
+
+
+def generate_contrast_configs(config, use_combinations, n_configs):
+    contrast_config = config["contrast"]
+    start, stop, n = contrast_config["contrast_limit"]
+    contrast_values = [(i, i) for i in np.linspace(start, stop, n)]
+    return [
+        {
+            "contrast_limit": b,
+            "brightness_by_max": contrast_config["brightness_by_max"],
+            "ensure_safe_range": contrast_config["ensure_safe_range"],
+        }
+        for b in contrast_values
+    ]
 
 
 def generate_rain_configs(config, use_combinations, n_configs):
@@ -155,9 +206,14 @@ def generate_combinations(config):
 
 def generate_images(yaml_config, configs, corrupt_func, output_path):
     if "select_random_imgs_from_base_path" in yaml_config:
-        corrupt_images_batch(yaml_config, configs, corrupt_func, output_path)
+        if yaml_config["select_random_imgs_from_base_path"]:
+            corrupt_images_batch(yaml_config, configs, corrupt_func, output_path)
+        else:
+            corrupt_single_image(yaml_config, configs, corrupt_func, output_path)
     else:
-        corrupt_single_image(yaml_config, configs, corrupt_func, output_path)
+        log(
+            "select_random_imgs_from_base_path could not be found. Running corrupt_single_image"
+        )
 
 
 def corrupt_images_batch(yaml_config, configs, corrupt_func, output_path):
@@ -214,8 +270,16 @@ distortion_configs = {
     "rain": generate_rain_configs,
     "fog": generate_fog_configs,
     "blur": generate_blur_configs,
+    "brightness": generate_brightness_configs,
+    "contrast": generate_contrast_configs,
 }
-distortion_transforms = {"rain": add_rain, "fog": add_fog, "blur": add_blur}
+distortion_transforms = {
+    "rain": add_rain,
+    "fog": add_fog,
+    "blur": add_blur,
+    "brightness": add_contrast_brightness,
+    "contrast": add_contrast_brightness,
+}
 
 
 def main():
@@ -234,7 +298,7 @@ def main():
         use_combinations = yaml_config["use_combinations"]
         n_configs = yaml_config["n_configs"]
 
-        for distortion in ["rain", "fog", "blur"]:
+        for distortion in ["rain", "fog", "blur", "brightness", "contrast"]:
             if distortion in yaml_config:
                 log(f"\nGenerating {distortion} images", bcolor_type=bcolors.HEADER)
                 output_path = yaml_config[distortion]["output_dir"]

@@ -98,8 +98,8 @@ def visualize_one_fig(
         plt.scatter(xs, ys_norm, color=colors[idx % len(colors)], s=10, label=metric)
 
     plt.xlabel("Noise severity")
-    plt.ylabel("Score")
-    plt.title(f"Scores for IQA metrics at different {fig_info} severities")
+    plt.ylabel("Normalized")
+    plt.title(f"Normalized scores for IQA metrics at different {fig_info} severities")
     plt.legend(title="Metrics", loc="upper right")
     if save_plots:
         file_name = "_".join(map(str, metrics))
@@ -130,5 +130,28 @@ def run_plots():
 
 
 if __name__ == "__main__":
-    pca("output/albumentations/rainy/combined_results.json")
+    plt.rcParams.update(
+        {
+            "font.size": 14,  # Default text size
+            "axes.titlesize": 16,  # Title size
+            "axes.labelsize": 14,  # X and Y label size
+            "xtick.labelsize": 12,  # X tick size
+            "ytick.labelsize": 12,  # Y tick size
+            "legend.fontsize": 12,  # Legend text size
+        }
+    )
+    # path = "../temporary_foggy.json"
+    path = "../temporary_foggy.json"
+    image_names = all_images()
+    metrics = ["tres", "topiq_nr", "qalign"]
+    visualize_one_fig(
+        path,
+        metrics,
+        image_names,
+        standardise=True,
+        save_plots=True,
+        save_path="..",
+        fig_info="Rain",
+    )
+    # pca("output/albumentations/rainy/combined_results.json")
     # pca("output/albumentations/foggy/combined_foggy_results.json")
