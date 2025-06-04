@@ -26,3 +26,13 @@ def load_yaml(file_path):
 def load_json(path):
     with open(path, "r") as file:
         return json.load(file)
+
+
+def filter_entries(data, **filters):
+    return [
+        entry for entry in data if all(entry.get(k) == v for k, v in filters.items())
+    ]
+
+
+def filter_by_key(data, key):
+    return [item[key] for item in data]
