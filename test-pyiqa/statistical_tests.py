@@ -11,35 +11,37 @@ from scipy.stats import friedmanchisquare
 import scikit_posthocs as sp
 from scipy.stats import wilcoxon
 from tabulate import tabulate
-from itertools import permutations
+from itertools import combinations
 from statsmodels.stats.multitest import multipletests
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Statistical tests script")
+def concatenate_dfs(coeff_dfs, combine_fogginess):
+    filtered_dfs = []
+    for df in coeff_dfs:
+        name = df.name
+        if not combine_fogginess:
+            df = df[df["Weather"] != "foggy_2"].reset_index(drop=True)
+            df.name = name
+        filtered_dfs.append(df)
 
-    parser.add_argument(
-        "--env",
-        type=str,
-        required=True,
-        help="Path to the env file containing wandb info",
-    )
-    return parser.parse_args()
-
-
-def calculate_combined_df(coeff_dfs):
     combined_df = pd.DataFrame(
         {
-            "Image_set": coeff_dfs[0]["location"].astype(str)
+            "Image_set": filtered_dfs[0]["Location"].astype(str)
             + "_"
-            + coeff_dfs[0]["prediction_key"].astype(str)
+            + filtered_dfs[0]["Weather"].astype(str)
             + "_"
-            + coeff_dfs[1]["weather"].astype(str)
+            + filtered_dfs[1]["Reference image"].astype(str)
         }
     )
-    for df in coeff_dfs:
+    for df in filtered_dfs:
         combined_df[f"{df.name}_SRCC"] = df["SRCC"]
     return combined_df
+
+
+def friedman_test(combined_df):
+    data_array = combined_df.to_numpy().T
+    friedman_stat, friedman_p_value = friedmanchisquare(*data_array)
+    print(f"Friedman_stat: {friedman_stat}. friedman_p: {friedman_p_value}")
 
 
 def manual_wilcoxon_signed_rank(combined_df, col1, col2):
@@ -53,83 +55,49 @@ def manual_wilcoxon_signed_rank(combined_df, col1, col2):
 
     positive_sum = signed_ranks[signed_ranks > 0].sum()
     negative_sum = signed_ranks[signed_ranks < 0].sum()
+    W = min(abs(positive_sum), abs(negative_sum))
+    return W, positive_sum, negative_sum
 
-    print(f"Positive sum: {positive_sum}. Negative sum: {negative_sum}")
-    print("Result", min(abs(positive_sum), abs(negative_sum)))
 
-
-def wilcoxon_signed_rank(combined_df):
-    pairs = list(permutations(combined_df.columns, 2))
-    p_values = [-1.0] * len(pairs)
-    stat_values = [-1.0] * len(pairs)
+def pairwise_wilcoxon(combined_df):
+    pairs = list(combinations(combined_df.columns, 2))
+    ps = [-1.0] * len(pairs)
+    stats = [-1.0] * len(pairs)
     index_to_pair = {}
-    for i, pair in enumerate(pairs):
-        col1, col2 = combined_df[pair[0]], combined_df[pair[1]]
-        index_to_pair[i] = pair
-        w_stat_one_side, w_p_one_side = wilcoxon(col1, col2, alternative="greater")
+    for i, (m_1, m_2) in enumerate(pairs):
+        col1, col2 = combined_df[m_1], combined_df[m_2]
+        index_to_pair[i] = (m_1, m_2)
         w_stat, w_p = wilcoxon(col1, col2)
-        assert (
-            w_stat == w_stat_one_side
-        ), f"w_stat: {w_stat}. w_stat_one_side: {w_stat_one_side}"
-        # assert w_p == w_p_one_side
-        # wilcoxon_matrix.loc[col1, col2] = (w_stat, w_p)
-        # wilcoxon_matrix.loc[col2, col1] = (w_stat, w_p)
-        p_values[i] = w_p
-        stat_values[i] = w_stat
-
-    rejected, pvals_corrected, _, _ = multipletests(p_values, alpha=0.05, method="holm")
-    for i, pair in index_to_pair.items():
-        col1, col2 = pair
-        # wilcoxon_matrix.loc[col1, col2] = pvals_corrected[i]
-        print(f"{col1} vs {col2}: p={pvals_corrected[i]:.5f}. W={stat_values[i]:.5f}")
-        """
-        print(
-            f"{col1}: Mean: {combined_df[col1].mean()}. Median: {combined_df[col1].median()}."
+        ps[i] = w_p
+        stats[i] = w_stat
+    _, ps_corr, _, _ = multipletests(ps, alpha=0.05, method="holm")
+    for i, (m_1, m_2) in index_to_pair.items():
+        W, positive_sum, negative_sum = manual_wilcoxon_signed_rank(
+            combined_df, m_1, m_2
         )
+        assert W == stats[i]
         print(
-            f"{col2}: Mean: {combined_df[col2].mean()}. Median: {combined_df[col2].median()}."
+            f"{m_1} - {m_2}. W = {W}, R+ = {positive_sum}, R- = {negative_sum}, p = {ps_corr[i]:.3f}"
         )
-        """
-        manual_wilcoxon_signed_rank(combined_df, col1, col2)
-        print("\n\n")
-
-    # print("pvals_corrected", pvals_corrected)
-    # print("rejected", rejected)
 
 
-def wilcoxon_signed_rank2(combined_df):
-    wilcoxon_qalign = combined_df[f"qalign_SRCC"]
-    wilcoxon_ilniqe = combined_df[f"ilniqe_SRCC"]
-    print("\n\nWilcoxon test between Q-Align and Ilniqe")
-    wilcoxon_statistic, wilcoxon_p_value = wilcoxon(wilcoxon_qalign, wilcoxon_ilniqe)
-    print(f"Wilcoxon statistic = {wilcoxon_statistic:.3f}")
-    print(f"p-value = {wilcoxon_p_value:.3e}")
-    return wilcoxon_statistic, wilcoxon_p_value
+def parse_args():
+    parser = argparse.ArgumentParser(description="Statistical tests script")
 
-
-def friedman_nemenyi_test(combined_df):
-    ranked_df = combined_df.drop(combined_df.columns[0], axis=1)
-
-    ranked_df = ranked_df.rank(axis=1, ascending=False)
-
-    mean_ranks = ranked_df.mean()
-    mean_ranks = mean_ranks.round(3)
-    print("mean_ranks", mean_ranks)
-
-    combined_df = combined_df.drop(combined_df.columns[0], axis=1)
-
-    data_array = combined_df.to_numpy().T
-
-    friedman_stat, friedman_p_value = friedmanchisquare(*data_array)
-
-    print(f"Friedman chi-square statistic = {friedman_stat:.3f}")
-    print(f"p-value = {friedman_p_value:.3e}")
-
-    print("\n\nNemenyi test")
-    nemenyi_p_matrix = sp.posthoc_nemenyi_friedman(combined_df)
-    nemenyi_p_matrix = nemenyi_p_matrix.round(4)
-
-    print(nemenyi_p_matrix)
+    parser.add_argument(
+        "--env",
+        type=str,
+        required=True,
+        help="Path to the env file containing wandb info",
+    )
+    parser.add_argument(
+        "--combine_fogginess",
+        required=False,
+        default=False,
+        action="store_true",
+        help="If true, include both foggy^1=foggy_0.0_1.0_0.7 and foggy^2=foggy_0.5_0.9",
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -154,10 +122,7 @@ if __name__ == "__main__":
     for pair in analysis_pairs:
         coeff_dfs.append(get_coefficients_table(entity, pair[0], pair[1]))
 
-    combined_df = calculate_combined_df(coeff_dfs)
-    combined_df = combined_df.drop(combined_df.columns[0], axis=1)
-    # friedman_nemenyi_test(combined_df)
-    wilcoxon_signed_rank(combined_df)
-    # manual_wilcoxon_signed_rank(combined_df)
-    # wilcoxon_signed_rank(combined_df)
-    # wilcoxon_signed_rank2(combined_df)
+    concat_df = concatenate_dfs(coeff_dfs, args.combine_fogginess)
+    concat_df = concat_df.drop("Image_set", axis=1)
+    friedman_test(concat_df)
+    pairwise_wilcoxon(concat_df)

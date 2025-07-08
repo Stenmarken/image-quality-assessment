@@ -10,18 +10,22 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
+import pandas as pd
+import numpy as np
+import plotly.express as px
 
-def generate_coefficients_figure(dfs, output_path, one_fogginess):
+
+def generate_coefficients_figure(dfs, output_path, combine_fogginess):
 
     # Combine all dataframes and assign a name column
     df_all = pd.concat(
         [df.assign(metric_name=df.name) for df in dfs], ignore_index=True
     )
-    if one_fogginess:
-        df_all = df_all[~(df_all["weather"] == "foggy_0.5_0.9")]
+    if not combine_fogginess:
+        df_all = df_all[~(df_all["Weather"] == "foggy_2")]
         # Rename fog variants to readable labels
         weather_rename_map = {
-            "foggy_0.7_0.0_1.0": "foggy",
+            "foggy_1": "foggy",
         }
         # Define desired legend order
         desired_order = [
@@ -32,8 +36,8 @@ def generate_coefficients_figure(dfs, output_path, one_fogginess):
         ]
     else:
         weather_rename_map = {
-            "foggy_0.7_0.0_1.0": "foggy¹",
-            "foggy_0.5_0.9": "foggy²",
+            "foggy__1": "foggy¹",
+            "foggy__2": "foggy²",
         }
         desired_order = [
             "Otaniemi-rainy",
@@ -43,10 +47,10 @@ def generate_coefficients_figure(dfs, output_path, one_fogginess):
             "Munkkivuori-foggy¹",
             "Munkkivuori-foggy²",
         ]
-    df_all["weather"] = df_all["weather"].replace(weather_rename_map)
+    df_all["Weather"] = df_all["Weather"].replace(weather_rename_map)
 
     # Create full setup for legend and hover info
-    df_all["full_setup"] = df_all["location"] + "-" + df_all["weather"]
+    df_all["full_setup"] = df_all["Location"] + "-" + df_all["Weather"]
     df_all["setup"] = df_all["full_setup"]
 
     df_all["setup"] = pd.Categorical(
@@ -69,7 +73,7 @@ def generate_coefficients_figure(dfs, output_path, one_fogginess):
         y="SRCC",
         color="setup",
         symbol_sequence=["circle"],
-        hover_data=["full_setup", "prediction_key", "metric_name", "SRCC"],
+        hover_data=["full_setup", "Reference image", "metric_name", "SRCC", "KRCC"],
     )
 
     # Increase marker size
@@ -122,11 +126,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--one_fogginess",
-        type=str,
+        "--combine_fogginess",
         required=False,
         default=False,
-        help="Parameter deciding if only foggy^1=foggy_0.0_1.0_0.7 should be used",
+        action="store_true",
+        help="If true, include both foggy^1=foggy_0.0_1.0_0.7 and foggy^2=foggy_0.5_0.9",
     )
     return parser.parse_args()
 
@@ -152,5 +156,4 @@ if __name__ == "__main__":
     coeff_dfs = []
     for pair in analysis_pairs:
         coeff_dfs.append(get_coefficients_table(entity, pair[0], pair[1]))
-
-    generate_coefficients_figure(coeff_dfs, args.output_path, args.one_fogginess)
+    generate_coefficients_figure(coeff_dfs, args.output_path, args.combine_fogginess)

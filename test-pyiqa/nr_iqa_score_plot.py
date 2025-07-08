@@ -60,6 +60,7 @@ import plotly.express as px
 
 def generate_violin_plot(metric, data, output_dir, one_fogginess, every_other):
     df = construct_df(data)
+    df["image_index"] += 1
 
     if one_fogginess:
         df = df[~(df["Location-weather"] == "Munkkivuori-foggy²")]
@@ -122,6 +123,7 @@ def generate_violin_plot(metric, data, output_dir, one_fogginess, every_other):
 
 def generate_box_plot(metric, data, output_dir, one_fogginess, every_other):
     df = construct_df(data)
+    df["image_index"] += 1
     if one_fogginess:
         df = df[~(df["Location-weather"] == "Munkkivuori-foggy²")]
         df = df[~(df["Location-weather"] == "Otaniemi-foggy²")]
@@ -179,6 +181,7 @@ def generate_box_plot(metric, data, output_dir, one_fogginess, every_other):
 
 def generate_score_plot(metric, data, output_dir, one_fogginess, every_other):
     df = construct_df(data)
+    df["image_index"] += 1
     if one_fogginess:
         df = df[~(df["Location-weather"] == "Munkkivuori-foggy²")]
         df = df[~(df["Location-weather"] == "Otaniemi-foggy²")]
