@@ -1,4 +1,0 @@
-metrics: ['brisque_matlab']
-img_dir: "output/albumentations/rainy"
-output_path: "output/test/results.json"
-file_types: [".jpg", ".jpeg", ".png"]

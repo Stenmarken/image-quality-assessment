@@ -3,7 +3,7 @@
 __pycache__/
 .DS_STORE
 output/
-test-pyiqa/configs/
-test-pyiqa/wandb
+configs/
+wandb
 test-pyiqa/run_information.md
-test-pyiqa/artifacts
+artifacts

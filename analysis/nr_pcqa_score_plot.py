@@ -19,10 +19,14 @@ def generate_box_plot(metric, csv_path, output_dir):
     # Optional: convert distortion to numeric if it's string-like
     df["Distortion"] = df["Distortion"].astype(float)
 
+    # df["Image_Index"] = df.groupby("Distortion").cumcount()
+    df["Image_Index"] = (df["Distortion"] * 100).astype(int) - 1
+    df.to_csv("test.csv")
+
     # Create box plot: score distributions per distortion level and time/weather
     fig = px.box(
         df,
-        x="Distortion",
+        x="Image_Index",
         y="Score",
         color="Time_Weather",
         points="outliers",  # Use "all" if desired
@@ -32,27 +36,35 @@ def generate_box_plot(metric, csv_path, output_dir):
 
     # Layout customization
     fig.update_layout(
-        xaxis_title="Distortion Severity",
+        xaxis_title="Point Cloud Index",
         yaxis_title="Score",
-        xaxis_title_font=dict(size=20),
-        yaxis_title_font=dict(size=20),
+        xaxis=dict(tickmode="linear", dtick=5, range=[-1, 10]),
         legend=dict(
             orientation="h",
-            yanchor="bottom",
-            y=-0.30,
+            yanchor="top",
+            y=-0.2,
             xanchor="center",
             x=0.5,
+            itemwidth=80,
+            itemsizing="constant",
+            tracegroupgap=5,
         ),
-        legend_title_text="",
-        font=dict(size=20),
-        width=800,
+        title=dict(
+            text=f"{metric} Score Distribution per Point Cloud Index",
+            font=dict(size=20),
+        ),
+        xaxis_title_font=dict(size=16),
+        yaxis_title_font=dict(size=16),
+        xaxis_tickfont=dict(size=14),
+        yaxis_tickfont=dict(size=16),
+        legend_font=dict(size=16),
+        legend_title=None,
+        margin=dict(l=10, r=10, t=60, b=100),
         height=600,
-        margin=dict(l=5, r=5, t=45, b=60),
     )
 
     if output_dir:
         fig.write_image(os.path.join(output_dir, f"{metric}_box_plot.pdf"), scale=3)
-    fig.show()
 
 
 def generate_score_plot(metric, csv_path, output_dir):
@@ -71,9 +83,11 @@ def generate_score_plot(metric, csv_path, output_dir):
     # Sort so lines are drawn in order of distortion
     df = df.sort_values(by=["Base_File", "Distortion"])
 
+    df["Image_Index"] = df.groupby("Base_File").cumcount()
+
     fig = px.scatter(
         df,
-        x="Distortion",
+        x="Image_Index",
         y="Score",
         color="Time_Weather",
         hover_data=df.columns,
@@ -102,7 +116,6 @@ def generate_score_plot(metric, csv_path, output_dir):
 
     fig.update_traces(marker=dict(size=10))
 
-    fig.show()
     if output_dir:
         fig.write_image(os.path.join(output_dir, f"{metric}_score_plot.pdf"), scale=3)
 
