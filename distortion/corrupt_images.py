@@ -1,22 +1,31 @@
 from PIL import Image
 import numpy as np
-import os
-from utils import bcolors, log, load_yaml
-import albumentations.augmentations.functional as F
+from pathlib import Path
+from utils.utils import bcolors, log, load_yaml
+
+from albumentations.augmentations.pixel import functional as F
 import albumentations as A
 import cv2
 import random
 import json
-import itertools
 import argparse
-from pathlib import Path
 
 
-def random_n_select(path, n, seed):
+def get_image_paths(path):
+    image_extensions = {".jpg", ".jpeg", ".png"}
+    posix_paths = [
+        f.resolve()
+        for f in path.iterdir()
+        if f.is_file() and f.suffix.lower() in image_extensions
+    ]
+    return list(map(str, posix_paths))
+
+
+def random_k_select(path, k, seed):
     np.random.seed(seed)
-    files = [f.resolve() for f in path.iterdir() if f.is_file()]
+    files = get_image_paths(path)
     # replace=False ensures no duplicates
-    return np.random.choice(files, n, replace=False)
+    return np.random.choice(files, k, replace=False)
 
 
 def generate_droplets(image, share, seed):
@@ -24,15 +33,15 @@ def generate_droplets(image, share, seed):
     height, width, _ = image.shape
     num_samples = int(share * height * width)
     indices = np.random.choice(height * width, num_samples, replace=False)
-    # TODO: Why is it (index%width, index // width).
-    # Shouldn't it be (index // width, index % width)
-    coords = [(index % width, index // width) for index in indices]
+
+    # OpenCV wants the coordinates in (x, y) form
+    coords = np.stack((indices % width, indices // width), axis=1)
     return coords
 
 
 def add_rain(img_path, config):
     random.seed(config["randomness_seed"])
-    image = read_img(img_path)
+    image = read_img_BGR(img_path)
     droplets = generate_droplets(
         image, config["droplet_share"], config["randomness_seed"]
     )
@@ -50,7 +59,7 @@ def add_rain(img_path, config):
 
 def add_fog(img_path, config):
     random.seed(config["randomness_seed"])
-    image = read_img(img_path)
+    image = read_img_BGR(img_path)
     droplets = generate_droplets(
         image, config["fog_particle_share"], config["randomness_seed"]
     )
@@ -64,7 +73,7 @@ def add_fog(img_path, config):
 
 
 def add_contrast_brightness(img_path, config):
-    image = read_img(img_path)
+    image = read_img_BGR(img_path)
     # Necessary as the default values are non-zero
     b_limit, c_limit = (0, 0)
     if "brightness_limit" in config:
@@ -87,35 +96,30 @@ def add_contrast_brightness(img_path, config):
 
 
 def add_blur(img_path, config):
-    image = read_img(img_path)
+    image = read_img_BGR(img_path)
     blur_transform = A.ReplayCompose([A.Blur(blur_limit=config["blur_value"], p=1)])
     replay = blur_transform(image=image)
-    assert_applied_blur(replay)
     return replay["image"]
 
 
-def assert_applied_blur(replay):
-    transforms = replay["replay"]["transforms"][0]
-    blur_value = transforms["blur_limit"]
-    kernel_size = transforms["params"]["kernel"]
-    assert blur_value[0] == kernel_size
-    assert transforms["applied"] == True
+def read_img_BGR(img_path):
+    return cv2.imread(img_path)
 
 
-def read_img(img_path):
-    image = cv2.imread(img_path)
-    # TODO: Is it correct to do BGR2RGB
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+def read_img_RGB(img_path):
+    img = cv2.imread(img_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img
 
 
-def generate_blur_configs(config, use_combintions, n_configs):
+def generate_blur_configs(config, n_configs):
     blur_config = config["blur"]
     start, stop, step = blur_config["blur_value"]
     blurs = [(i, i) for i in range(start, stop + 1, step) if i % 2 == 1]
     return [{"blur_value": blur} for blur in blurs]
 
 
-def generate_brightness_configs(config, use_combintions, n_configs):
+def generate_brightness_configs(config, n_configs):
     brightness_config = config["brightness"]
     start, stop, n = brightness_config["brightness_limit"]
     brightness_values = [(i, i) for i in np.linspace(start, stop, n)]
@@ -129,7 +133,7 @@ def generate_brightness_configs(config, use_combintions, n_configs):
     ]
 
 
-def generate_contrast_configs(config, use_combinations, n_configs):
+def generate_contrast_configs(config, n_configs):
     contrast_config = config["contrast"]
     start, stop, n = contrast_config["contrast_limit"]
     contrast_values = [(i, i) for i in np.linspace(start, stop, n)]
@@ -143,7 +147,7 @@ def generate_contrast_configs(config, use_combinations, n_configs):
     ]
 
 
-def generate_rain_configs(config, use_combinations, n_configs):
+def generate_rain_configs(config, n_configs):
     rain_config = config["rain"]
     for k, v in rain_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -152,17 +156,14 @@ def generate_rain_configs(config, use_combinations, n_configs):
             rain_config[k] = list(np.linspace(start, stop, num))
         else:
             rain_config[k] = [v]
-    if use_combinations:
-        dicts = generate_combinations(rain_config)
-    else:
-        dicts = generate_n_configs(rain_config, n_configs)
+    dicts = generate_n_configs(rain_config, n_configs)
     for d in dicts:
         d["randomness_seed"] = config["randomness_seed"]
         d["blur_value"] = int(d["blur_value"])
     return dicts
 
 
-def generate_fog_configs(config, use_combinations, n_configs):
+def generate_fog_configs(config, n_configs):
     fog_config = config["fog"]
     for k, v in fog_config.items():
         # All lists except drop_color should be treated as ranges (start, stop, num_elements)
@@ -171,10 +172,7 @@ def generate_fog_configs(config, use_combinations, n_configs):
             fog_config[k] = list(np.linspace(start, stop, num))
         else:
             fog_config[k] = [v]
-    if use_combinations:
-        dicts = generate_combinations(fog_config)
-    else:
-        dicts = generate_n_configs(fog_config, n_configs)
+    dicts = generate_n_configs(fog_config, n_configs)
     for d in dicts:
         d["randomness_seed"] = config["randomness_seed"]
     return dicts
@@ -195,75 +193,43 @@ def generate_n_configs(config, n):
     return dicts
 
 
-def generate_combinations(config):
-    """
-    Generates all possible combinations of values specified in the config
-    """
-    keys = config.keys()
-    values = config.values()
-    return [dict(zip(keys, combination)) for combination in itertools.product(*values)]
-
-
-def generate_images(yaml_config, configs, corrupt_func, output_path):
-    if "select_random_imgs_from_base_path" in yaml_config:
-        if yaml_config["select_random_imgs_from_base_path"]:
-            corrupt_images_batch(yaml_config, configs, corrupt_func, output_path)
-        else:
-            corrupt_single_image(yaml_config, configs, corrupt_func, output_path)
-    else:
-        log(
-            "select_random_imgs_from_base_path could not be found. Running corrupt_single_image"
-        )
-
-
-def corrupt_images_batch(yaml_config, configs, corrupt_func, output_path):
-    base_path = Path(yaml_config["base_path"])
+def generate_images(distortion, yaml_config, configs, corrupt_func, output_path):
+    images_path = Path(yaml_config["images_path"])
     output_path = Path(output_path)
     seed = yaml_config["randomness_seed"]
-    n = yaml_config["num_images"]
     log(
         f"Generating {len(configs)} images at {output_path}",
         bcolor_type=bcolors.WARNING,
     )
-    images = random_n_select(base_path, n, seed)
+    if yaml_config["select_k_random"]:
+        k = yaml_config["k"]
+        log(
+            f"Selecting {k} images at random",
+            bcolor_type=bcolors.WARNING,
+        )
+        images = random_k_select(images_path, k, seed)
+    else:
+        images = get_image_paths(images_path)
+
     file_to_config = {}
     for img in images:
-        img_path = Path(img)
-        full_path = output_path / img_path.name
+        full_path = output_path / Path(img).name
         full_path.parent.mkdir(parents=True, exist_ok=True)
         for i, config in enumerate(configs):
-            suffix = f"blur_{config['blur_value'][0]}_kernel"
-            generate_one_image(
-                corrupt_func, i, img_path, config, full_path, suffix=suffix
-            )
-            file_to_config[f"{img_path.name}_{suffix}{i}.png"] = config
+            image_name = f"{distortion}_{i}"
+            generate_one_image(corrupt_func, img, config, full_path, image_name)
+            file_to_config[f"{Path(img).name}/{image_name}.png"] = config
 
-    with open(os.path.join(output_path, "file_to_config.json"), "w") as f:
+    with open(output_path / "file_to_config.json", "w") as f:
         json.dump(file_to_config, f, indent=4)
 
 
-def corrupt_single_image(yaml_config, configs, corrupt_func, output_path):
-    img_path = yaml_config["image_path"]
-    log(
-        f"Generating {len(configs)} images at {output_path}",
-        bcolor_type=bcolors.WARNING,
-    )
-    file_to_config = {}
-    for i, config in enumerate(configs):
-        generate_one_image(corrupt_func, i, img_path, config, output_path)
-        file_to_config[f"{i}.png"] = config
-
-    with open(os.path.join(output_path, "file_to_config.json"), "w") as f:
-        json.dump(file_to_config, f, indent=4)
-
-
-def generate_one_image(corrupt_func, i, img_path, config, output_path, suffix=""):
-    log(f"Generating image with config {config}", bcolor_type=bcolors.OKBLUE)
+def generate_one_image(corrupt_func, img_path, config, output_path, image_name):
+    # log(f"Generating image with config {config}", bcolor_type=bcolors.OKBLUE)
     img = corrupt_func(img_path=img_path, config=config)
-    img = Image.fromarray(img)
-    path = os.path.join(output_path, f"{i}{suffix}.png")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.save(path)
+    path = output_path / f"{image_name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(path), img)
 
 
 distortion_configs = {
@@ -295,17 +261,25 @@ def main():
         raise argparse.ArgumentTypeError("Directory path must be specified")
     else:
         yaml_config = load_yaml(args.config)
-        use_combinations = yaml_config["use_combinations"]
-        n_configs = yaml_config["n_configs"]
 
-        for distortion in ["rain", "fog", "blur", "brightness", "contrast"]:
-            if distortion in yaml_config:
-                log(f"\nGenerating {distortion} images", bcolor_type=bcolors.HEADER)
-                output_path = yaml_config[distortion]["output_dir"]
-                config_func = distortion_configs[distortion]
-                configs = config_func(yaml_config, use_combinations, n_configs)
-                corrupt_func = distortion_transforms[distortion]
-                generate_images(yaml_config, configs, corrupt_func, output_path)
+        meta_keys = {
+            "randomness_seed",
+            "images_path",
+            "n_configs",
+            "select_k_random",
+            "k",
+        }
+
+        for distortion in yaml_config:
+            if distortion in meta_keys:
+                continue
+            corrupt_func = distortion_transforms[distortion]
+            config_func = distortion_configs[distortion]
+
+            log(f"\nGenerating {distortion} images", bcolor_type=bcolors.HEADER)
+            output_path = yaml_config[distortion]["output_dir"]
+            configs = config_func(yaml_config, yaml_config["n_configs"])
+            generate_images(distortion, yaml_config, configs, corrupt_func, output_path)
 
 
 if __name__ == "__main__":

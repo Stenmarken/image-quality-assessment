@@ -1,0 +1,26 @@
+# Note that parameters of the form [x, y, *n_configs] are linearly spaced from x
+# to y with n_configs versions.
+
+randomness_seed: 5
+images_path: "path/to/images" # Path to the reference images to be distorted.
+n_configs: &n_configs 100
+select_k_random: False # Should the program randomly choose k images from images_path
+# The number of images the program randomly chooses from images_path.
+# Only valid when select_k_random = True
+k: 0
+rain:
+  droplet_share: [0.0000, 0.01, *n_configs] # Share of pixels which will have a rain drop
+  slant: -15
+  drop_length: 20
+  drop_width: 1
+  drop_color: [200, 200, 200]
+  blur_value: 7
+  brightness_coefficient: [1.0, 0.7, *n_configs]
+  output_dir: "path/to/rainy_output_dir"
+fog:
+  fog_particle_share: 0.5
+  fog_intensity: 0.7
+  alpha_coef: [0.0, 1.0, *n_configs]
+  fog_particle_size: 25
+  output_dir: "path/to/foggy_output_dir"
+
