@@ -23,3 +23,11 @@ To run the image quality assessment, use the `run_metric.py` script. It requires
 ```python
 python3 -m evaluation.run_metric -c configs/metric_configs/metric_config.yaml
 ```
+
+### Running the analysis
+
+To run the analysis which in this barebones version calculates the Spearman and Kendall rank correlation coefficients (SRCC and KRCC), run the `analysis.py` script. It can be run using the following command:
+
+```python
+python3 -m analysis.analysis -c configs/analysis_configs/analysis_config.yaml
+```
