@@ -1,8 +1,8 @@
 absl-py==2.1.0
 accelerate==1.2.1
 addict==2.4.0
-albucore==0.0.23
-albumentations==2.0.0
+albucore==0.0.33
+albumentationsx==2.0.9
 annotated-types==0.7.0
 asttokens==3.0.0
 bitsandbytes==0.42.0
@@ -46,11 +46,12 @@ nodeenv==1.9.1
 numba==0.60.0
 numpy==1.26.4
 openai-clip==1.0.1
-opencv-python==4.10.0.84
+opencv-python==4.6.0.66
 opencv-python-headless==4.10.0.84
 packaging==24.2
 pandas==2.2.3
 pillow==11.1.0
+pip_system_certs==5.2
 pipdeptree==2.24.0
 platformdirs==4.3.6
 pluggy==1.5.0
@@ -74,6 +75,7 @@ scikit-learn==1.6.1
 scipy==1.15.1
 seaborn==0.13.2
 sentencepiece==0.2.0
+setuptools==80.9.0
 shapely==2.0.6
 simsimd==6.2.1
 six==1.17.0
