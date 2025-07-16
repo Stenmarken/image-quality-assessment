@@ -26,6 +26,10 @@ def load_yaml(file_path):
 def load_json(path):
     with open(path, "r") as file:
         return json.load(file)
+    
+def write_to_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4) 
 
 
 def filter_entries(data, **filters):
