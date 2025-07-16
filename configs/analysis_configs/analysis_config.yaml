@@ -1,4 +1,4 @@
-entity: "entity"
-project: "project"
-run_id: "run_id"
-output_path: "output_path"
+entity: "entity" # entity is the name of the team in Wandb
+project: "project" # project is the project name for the run in Wandb
+run_id: "run_id" # run_id is the id for the specific run you are looking at
+output_path: "output_path" # output the full path including file name
