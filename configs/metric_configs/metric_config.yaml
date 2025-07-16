@@ -1,0 +1,7 @@
+metric: niqe # The metric has to be one of the NR-IQA metrics supported by pyiqa
+input_dir: ""
+output_dir: ""
+# If you want to resume an earlier run. Set use_prev_results
+# to true and specify prev_results_path
+use_prev_results: False
+prev_results_path: ""
